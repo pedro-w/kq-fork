@@ -78,15 +78,15 @@ std::vector<Raster*> page_indicator;         //[MAXPGB]
 std::vector<Raster*> shadow;                 //[NUM_SHADOWS]
 
 /*! Overworld movement (standing, walking, running) */
-std::vector<std::vector<Raster*>> frames;    //[MAXCHRS][MAXFRAMES]
+std::vector<std::vector<Raster*>> frames; //[MAXCHRS][MAXFRAMES]
 
 // Combat frames: tcframes[] are the "unmodified" sprites wile cframes[] may be recolored to indicate poison or
 // some other effect.
-std::vector<std::vector<Raster*>> cframes;   //[NUM_FIGHTERS][MAXCFRAMES]
-std::vector<std::vector<Raster*>> tcframes;  //[NUM_FIGHTERS][MAXCFRAMES]
+std::vector<std::vector<Raster*>> cframes;  //[NUM_FIGHTERS][MAXCFRAMES]
+std::vector<std::vector<Raster*>> tcframes; //[NUM_FIGHTERS][MAXCFRAMES]
 
 /*! Enemy animations */
-std::vector<std::vector<Raster*>> eframes;   //[MAXE][MAXEFRAMES]
+std::vector<std::vector<Raster*>> eframes; //[MAXE][MAXEFRAMES]
 
 Raster* b_mp {};
 Raster* b_repulse {};
@@ -508,7 +508,7 @@ Raster* KGame::alloc_bmp(int bitmap_width, int bitmap_height, const char* bitmap
         }
     }
     return tmp;
-#else /* !DEBUGMODE */
+#else  /* !DEBUGMODE */
     (void)bitmap_name;
     return new Raster(bitmap_width, bitmap_height);
 #endif /* DEBUGMODE */
@@ -527,7 +527,7 @@ std::vector<Raster*> KGame::alloc_bmps(const std::string& bitmap_name, const std
         bitmaps[i] = new Raster(bitmap_widths[i], bitmap_heights[i]);
         if (bitmaps[i] == nullptr)
         {
-	    sprintf(strbuf, _("ERROR: Could not allocate %s[%zu]!"), bitmap_name.c_str(), i);
+            sprintf(strbuf, _("ERROR: Could not allocate %s[%zu]!"), bitmap_name.c_str(), i);
             program_death(strbuf);
         }
     }
@@ -547,7 +547,7 @@ std::vector<Raster*> KGame::alloc_bmps(const size_t total, const std::string& bi
         bitmaps[i] = new Raster(bitmap_width, bitmap_height);
         if (bitmaps[i] == nullptr)
         {
-	    sprintf(strbuf, _("ERROR: Could not allocate %s[%zu]!"), bitmap_name.c_str(), i);
+            sprintf(strbuf, _("ERROR: Could not allocate %s[%zu]!"), bitmap_name.c_str(), i);
             program_death(strbuf);
         }
     }
@@ -581,7 +581,7 @@ std::vector<std::vector<Raster*>> KGame::alloc_bmps_2d(const size_t rows, const 
             bitmaps[row][col] = new Raster(bitmap_width, bitmap_height);
             if (bitmaps[row][col] == nullptr)
             {
-	        sprintf(strbuf, _("ERROR: Could not allocate %s[%zu][%zu]!"), bitmap_name.c_str(), row, col);
+                sprintf(strbuf, _("ERROR: Could not allocate %s[%zu][%zu]!"), bitmap_name.c_str(), row, col);
                 program_death(strbuf);
             }
         }
@@ -645,7 +645,7 @@ void KGame::allocate_stuff()
     shadow = alloc_bmps(NUM_SHADOWS, "shadow", TILE_W, TILE_H);
     message_bubble_stems = alloc_bmps(NUM_STEMS, "message_bubble_stems", 16, 16);
 
-    std::vector<int> thought_widths{ 8, 8, 8, 8, 8, 8, 8, 8 };
+    std::vector<int> thought_widths { 8, 8, 8, 8, 8, 8, 8, 8 };
     std::vector<int> thought_heights { 8, 8, 8, 12, 12, 8, 8, 8 };
     thought_bubble_borders = alloc_bmps("thought_bubble_borders", thought_widths, thought_heights);
 
@@ -1385,7 +1385,8 @@ void KGame::startup()
     constexpr int bord_yoffset[NUM_EDGES] = { 0, 0, 0, 8, 8, 20, 20, 20 };
     for (p = 0; p < NUM_EDGES; p++)
     {
-        misc->blitTo(thought_bubble_borders[p], bord_xoffset[p] * 8 + 96, 64 + bord_yoffset[p], 0, 0, thought_bubble_borders[p]->width, thought_bubble_borders[p]->height);
+        misc->blitTo(thought_bubble_borders[p], bord_xoffset[p] * 8 + 96, 64 + bord_yoffset[p], 0, 0,
+                     thought_bubble_borders[p]->width, thought_bubble_borders[p]->height);
     }
 
     for (i = 0; i < MAXPGB; i++)
@@ -1709,7 +1710,7 @@ void KGame::set_cheat(int cheat)
 {
 #ifdef KQ_CHEATS
     _cheat = cheat;
-#else /* !KQ_CHEATS */
+#else  /* !KQ_CHEATS */
     (void)cheat;
 #endif /* KQ_CHEATS */
 }
@@ -1718,7 +1719,7 @@ void KGame::set_no_random_encounters(int no_random_encounters)
 {
 #ifdef KQ_CHEATS
     _no_random_encounters = no_random_encounters;
-#else /* !KQ_CHEATS */
+#else  /* !KQ_CHEATS */
     (void)no_random_encounters;
 #endif /* KQ_CHEATS */
 }
@@ -1727,7 +1728,7 @@ void KGame::set_no_monsters(int no_monsters)
 {
 #ifdef KQ_CHEATS
     _no_monsters = no_monsters;
-#else /* !KQ_CHEATS */
+#else  /* !KQ_CHEATS */
     (void)no_monsters;
 #endif /* KQ_CHEATS */
 }
@@ -1736,7 +1737,7 @@ void KGame::set_every_hit_999(int every_hit_999)
 {
 #ifdef KQ_CHEATS
     _every_hit_999 = every_hit_999;
-#else /* !KQ_CHEATS */
+#else  /* !KQ_CHEATS */
     (void)every_hit_999;
 #endif /* KQ_CHEATS */
 }
@@ -1750,8 +1751,6 @@ void KGame::alldead(bool value)
 {
     _alldead = value;
 }
-
-
 
 /*! \page treasure A Note on Treasure
  *

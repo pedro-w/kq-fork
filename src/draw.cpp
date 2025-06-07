@@ -55,7 +55,7 @@ constexpr auto MSG_COLS = 36;
  *
  * Messages to the player can be up to 4 rows of text (at a time).
  */
-std::array<std::string, MSG_ROWS> msgbuf; //char msgbuf[MSG_ROWS][MSG_COLS];
+std::array<std::string, MSG_ROWS> msgbuf; // char msgbuf[MSG_ROWS][MSG_COLS];
 
 // Position of speaking entity for speech bubbles in pixels
 int gbx, gby;
@@ -302,9 +302,8 @@ void KDraw::draw_backlayer()
 {
     // Parallax should be disabled for the back layer when player goes inside a bounded area.
     bool enable_parallax = !Game.Map.g_map.bounds.IsBound(view_x1, view_y1, view_x2, view_y2);
-    auto box = calculate_box(enable_parallax &&
-                             (Game.Map.g_map.map_mode == eMapMode::MAPMODE_1p2E3S ||
-                              Game.Map.g_map.map_mode == eMapMode::MAPMODE_1E2p3S));
+    auto box = calculate_box(enable_parallax && (Game.Map.g_map.map_mode == eMapMode::MAPMODE_1p2E3S ||
+                                                 Game.Map.g_map.map_mode == eMapMode::MAPMODE_1E2p3S));
     int tile_x1 = box.x_offset / TILE_W;
     int tile_x2 = (box.x_offset + SCREEN_W - 1) / TILE_W;
     int tile_y1 = box.y_offset / TILE_H;
@@ -1120,7 +1119,7 @@ std::string::const_iterator KDraw::decode_utf8(std::string::const_iterator it, u
 
     if (!ok)
     {
-        //Game.program_death(_("UTF-8 decode error"));
+        // Game.program_death(_("UTF-8 decode error"));
         sprintf(strbuf, _("UTF-8 decode error: %d"), cp);
         Game.klog(strbuf);
     }

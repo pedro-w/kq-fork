@@ -37,9 +37,11 @@
  *
  * This file includes the main() function which contains the outer-most game loop.
  *
- * The splash screen is displayed when the game is inactive: before the game starts, and after all party members die or the player chooses to quit.
+ * The splash screen is displayed when the game is inactive: before the game starts, and after all party members die or
+ * the player chooses to quit.
  *
- * While the game is playing, the inner game loop polls for player input, processes movement, updates animations, and polls the music engine.
+ * While the game is playing, the inner game loop polls for player input, processes movement, updates animations, and
+ * polls the music engine.
  */
 
 #include "console.h"
@@ -57,7 +59,6 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
-
 
 struct ProgramArguments
 {

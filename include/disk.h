@@ -23,6 +23,7 @@
 
 #include "sgame.h"
 
+#include <filesystem>
 #include <string>
 #include <tinyxml2.h>
 #include <vector>
@@ -34,12 +35,12 @@ class KDisk
 {
   public:
     /*! \brief Load everything from a file. */
-    int load_game_from_file(const char* filename);
+    int load_game_from_file(const std::filesystem::path& filename);
 
     /*! \brief Save everything into a file. */
     int save_game_to_file(const char* filename);
 
-    int save_fighters_to_file(const char* filename, KFighter* fighters, int count);
+    int save_fighters_to_file(const std::filesystem::path& filename, KFighter* fighters, int count);
 
     /*! \brief Load an XML file but only to get the stats out of it.
      *
@@ -47,14 +48,14 @@ class KDisk
      * \param   stats Where to put the stats.
      * \returns 0 if OK, otherwise 1.
      */
-    int load_stats_only(const char* filename, s_sgstats& stats);
+    int load_stats_only(const std::filesystem::path& filename, s_sgstats& stats);
 
     /*! \brief Helper function: does a file exist?
      *
      * \param   filename File to search for.
      * \returns True if file exists in the file system.
      */
-    bool exists(const char* filename);
+    bool exists(const std::filesystem::path& filename);
 
   private:
     /*! \brief Convert a comma-separated list of ints into a vector.

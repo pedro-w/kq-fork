@@ -816,7 +816,7 @@ int skill_use(size_t attack_fighter_index)
                 }
             }
         }
-#else /* !DEBUGMODE */
+#else  /* !DEBUGMODE */
         cts = party[pidx[attack_fighter_index]].lvl * 2 + 35;
         if (cts > 95)
         {

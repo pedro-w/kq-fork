@@ -25,7 +25,7 @@
  * \brief Platform-specific interfaces, prototypes, and #defines.
  */
 
-#include <string>
+#include <filesystem>
 
 enum class eDirectories
 {
@@ -46,4 +46,4 @@ enum class eDirectories
  * \param   file File to find.
  * \returns Name of the resource.
  */
-const std::string kqres(enum eDirectories dir, const std::string& file);
+const std::filesystem::path kqres(enum eDirectories dir, const std::filesystem::path& file);

@@ -854,11 +854,11 @@ void hero_choose_action(size_t fighter_index)
                  // but the following line needs to be accessed regardless
                  // of whether DEBUGMODE is declared or not.
                  // It also needs to run in case "debugging" is NOT >= 3.
-#endif /* DEBUGMODE */
+#endif           /* DEBUGMODE */
                 if (sptr - 1 > can_run)
-            {
-                sptr = 1 + can_run;
-            }
+                {
+                    sptr = 1 + can_run;
+                }
         }
         if (PlayerInput.balt())
         {
@@ -1254,8 +1254,8 @@ static void hero_run()
 
                 if (fighter[fighter_index].IsAlive())
                 {
-                    draw_sprite(double_buffer, frames[pidx[fighter_index]][animation_frame_num], fighter[fighter_index].cx,
-                                fighter[fighter_index].cy);
+                    draw_sprite(double_buffer, frames[pidx[fighter_index]][animation_frame_num],
+                                fighter[fighter_index].cx, fighter[fighter_index].cy);
                 }
             }
             Draw.blit2screen();

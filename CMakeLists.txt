@@ -89,8 +89,7 @@ set(kq-fork_SRCS
 	src/timing.cpp
 	src/tmx_animation.cpp
 	src/tmx_tileset.cpp
-	$<$<PLATFORM_ID:Linux,Darwin>:src/unix.cpp>
-	$<$<PLATFORM_ID:Windows>:src/win.cpp>
+	src/std17.cpp
 )
 set(PNG_LIBRARIES PNG::PNG)
 

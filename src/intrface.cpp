@@ -542,24 +542,24 @@ static struct s_field
 
 // *INDENT-OFF*
 fields[] = {
-    { "name",   PROP_NAME   }, // KPlayer::name: Name of entity
-    { "xp",     PROP_XP     }, // KPlayer::xp: Entity experience
-    { "next",   PROP_NEXT   }, // KPlayer::next: Experience left for next level-up
-    { "lvl",    PROP_LVL    }, // KPlayer::lvl: Current level of entity
-    { "mrp",    PROP_MRP    }, // KPlayer::mrp: Magic actually required for a spell (can be reduced with I_MANALOCKET)
-    { "hp",     PROP_HP     }, // KPlayer::hp: Entity's current hit points
-    { "mhp",    PROP_MHP    }, // KPlayer::mhp: Maximum hit points
-    { "mp",     PROP_MP     }, // KPlayer::mp: Current magic points
-    { "mmp",    PROP_MMP    }, // KPlayer::mmp: Maximum magic points
-    { "id",     PROP_ID     }, // Offset between &party[0] and &party[N] (position within the party)
-    { "tilex",  PROP_TILEX  }, // KQEntity::tilex: Position of entity, full x tile
-    { "tiley",  PROP_TILEY  }, // KQEntity::tiley: Position of entity, full y tile
-    { "eid",    PROP_EID    }, // KQEntity::eid: Entity ID
-    { "chrx",   PROP_CHRX   }, // KQEntity::chrx: Appearance of entity
+    { "name", PROP_NAME },     // KPlayer::name: Name of entity
+    { "xp", PROP_XP },         // KPlayer::xp: Entity experience
+    { "next", PROP_NEXT },     // KPlayer::next: Experience left for next level-up
+    { "lvl", PROP_LVL },       // KPlayer::lvl: Current level of entity
+    { "mrp", PROP_MRP },       // KPlayer::mrp: Magic actually required for a spell (can be reduced with I_MANALOCKET)
+    { "hp", PROP_HP },         // KPlayer::hp: Entity's current hit points
+    { "mhp", PROP_MHP },       // KPlayer::mhp: Maximum hit points
+    { "mp", PROP_MP },         // KPlayer::mp: Current magic points
+    { "mmp", PROP_MMP },       // KPlayer::mmp: Maximum magic points
+    { "id", PROP_ID },         // Offset between &party[0] and &party[N] (position within the party)
+    { "tilex", PROP_TILEX },   // KQEntity::tilex: Position of entity, full x tile
+    { "tiley", PROP_TILEY },   // KQEntity::tiley: Position of entity, full y tile
+    { "eid", PROP_EID },       // KQEntity::eid: Entity ID
+    { "chrx", PROP_CHRX },     // KQEntity::chrx: Appearance of entity
     { "facing", PROP_FACING }, // KQEntity::facing: Direction facing
     { "active", PROP_ACTIVE }, // KQEntity::active: Active or not
-    { "say",    PROP_SAY    }, // Text bubble (may be deprecated: see function bubble() in global.lua)
-    { "think",  PROP_THINK  }, // Thought bubble (may be deprecated: see function thought() in global.lua)
+    { "say", PROP_SAY },       // Text bubble (may be deprecated: see function bubble() in global.lua)
+    { "think", PROP_THINK },   // Thought bubble (may be deprecated: see function thought() in global.lua)
 };
 
 // *INDENT-ON*
@@ -647,7 +647,7 @@ template<typename... Args> static bool call_global(const char* funcname, Args...
 #ifdef DEBUGMODE
         // protected call - KQ_traceback shows error message if there is one.
         lua_pcall(theL, sizeof...(args), 0, oldtop + 1);
-#else /* !DEBUGMODE */
+#else  /* !DEBUGMODE */
         // Unprotected call - lua will abort with an error message
         lua_call(theL, sizeof...(args), 0);
 #endif /* DEBUGMODE */
@@ -672,7 +672,6 @@ void do_entity(int en_num)
         KQ_check_map_change();
     }
 }
-
 
 void do_luacheat()
 {
@@ -3771,7 +3770,7 @@ static int KQ_traceback(lua_State* theL)
     }
 #ifndef DEBUGMODE
     Draw.message(_("Script error."), 255, 0);
-#else /* !DEBUGMODE */
+#else  /* !DEBUGMODE */
     Draw.message(_("Script error. Check system logs for more info"), 255, 0);
 #endif /* DEBUGMODE */
     return 1;

@@ -83,7 +83,8 @@ struct KQEntity
     /*! Whether the entity is visible (true) or not (false) on the map. */
     uint8_t active;
 
-    /*! See eDirection: value from [0..3] (often multiplied by ENT_FRAMES_PER_DIR to determine animation frame to render). */
+    /*! See eDirection: value from [0..3] (often multiplied by ENT_FRAMES_PER_DIR to determine animation frame to
+     * render). */
     uint8_t facing;
 
     /*! \brief In the middle of a move.

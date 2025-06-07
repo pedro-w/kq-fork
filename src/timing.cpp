@@ -31,8 +31,8 @@
 // Exclude rarely-used stuff from Windows headers (Windows.h must be included before any other windows headers)
 #define WIN32_LEAN_AND_MEAN
 
-#include <windows.h>
 #include <debugapi.h>
+#include <windows.h>
 #endif
 
 #include "kq.h"

@@ -32,11 +32,13 @@
 #include "random.h"
 #include "shopmenu.h"
 
+#include <filesystem>
 #include <map>
 #include <sys/stat.h>
 
 KDisk Disk;
 
+using std::filesystem::path;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
@@ -910,10 +912,10 @@ int KDisk::load_game_xml(XMLElement* node)
     return 1;
 }
 
-int KDisk::load_game_from_file(const char* filename)
+int KDisk::load_game_from_file(const path& filename)
 {
     XMLDocument doc;
-    doc.LoadFile(filename);
+    doc.LoadFile(filename.c_str());
     if (!doc.Error())
     {
         return load_game_xml(doc.RootElement());
@@ -1004,9 +1006,9 @@ int KDisk::save_s_fighter(tinyxml2::XMLPrinter& out, const KFighter& f)
     return 0;
 }
 
-int KDisk::save_fighters_to_file(const char* filename, KFighter* fighters, int count)
+int KDisk::save_fighters_to_file(const path& filename, KFighter* fighters, int count)
 {
-    FILE* f = fopen(filename, "wb");
+    FILE* f = fopen(filename.c_str(), "wb");
     if (f)
     {
         tinyxml2::XMLPrinter out(f);
@@ -1023,10 +1025,10 @@ int KDisk::save_fighters_to_file(const char* filename, KFighter* fighters, int c
     return 0;
 }
 
-int KDisk::load_stats_only(const char* filename, s_sgstats& stats)
+int KDisk::load_stats_only(const path& filename, s_sgstats& stats)
 {
     XMLDocument doc;
-    doc.LoadFile(filename);
+    doc.LoadFile(filename.c_str());
     if (!doc.Error())
     {
         XMLElement* properties = doc.RootElement()->FirstChildElement(TAG_PROPERTIES);
@@ -1069,8 +1071,7 @@ int KDisk::load_stats_only(const char* filename, s_sgstats& stats)
     return 1;
 }
 
-bool KDisk::exists(const char* filename)
+bool KDisk::exists(const path& filename)
 {
-    struct stat st;
-    return stat(filename, &st) == 0;
+    return std::filesystem::exists(filename);
 }

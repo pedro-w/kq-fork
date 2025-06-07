@@ -20,9 +20,8 @@
 */
 
 /*! \file
- * \brief Specifics for unix-like platforms.
+ * \brief Specifics using the C++17 std::filesystem stuff.
  *
- * This includes any bits which are specific for Unix-like platforms (e.g. Linux).
  */
 
 #include "disk.h"
@@ -31,39 +30,18 @@
 #include "platform.h"
 
 #include <SDL.h>
+#include <filesystem>
 #include <string>
 #include <sys/errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-static bool init_path = false;
-static std::string user_dir;
-static std::string data_dir;
-static std::string lib_dir;
+using std::filesystem::path;
 
-static std::string join(const std::string& path1, const std::string& path2)
-{
-    if (path1.empty())
-    {
-        return path2;
-    }
-    if (path2.empty())
-    {
-        return path1;
-    }
-    if (path2.front() == '/')
-    {
-        return path2;
-    }
-    if (path1.back() == '/')
-    {
-        return path1 + path2;
-    }
-    else
-    {
-        return path1 + std::string { '/' } + path2;
-    }
-}
+static bool init_path = false;
+static path user_dir;
+static path data_dir;
+static path lib_dir;
 
 /*! \brief Returns the full path for this file.
  *
@@ -75,16 +53,19 @@ static std::string join(const std::string& path1, const std::string& path2)
  * \param   file The filename.
  * \returns The combined path.
  */
-static std::string get_resource_file_path(const std::string& str1, const std::string& str2, const std::string& file)
+static path get_resource_file_path(const path& str1, const path& str2, const path& file)
 {
-    std::string tail = join(str2, file);
-    std::string ans = join(user_dir, tail);
+    auto tail = str2 / file;
+    auto ans = user_dir / tail;
 
-    if (!Disk.exists(ans.c_str()))
+    if (std::filesystem::exists(ans))
     {
-        ans = join(str1, tail);
+        return ans;
     }
-    return ans;
+    else
+    {
+        return str1 / tail;
+    }
 }
 
 /*! \brief Returns the full path for this lua file.
@@ -99,34 +80,36 @@ static std::string get_resource_file_path(const std::string& str1, const std::st
  * Whereas get_resource_file_path() takes the full filename (eg. "main.map"), this function takes the filename without
  * extension (eg "main").
  *
- * \param   str1 The first part of the string (the install path, eg. "/usr/local/lib/kq").
+ * \param   str1 The first part of the path (the install path, eg. "/usr/local/lib/kq").
  * \param   file The filename.
  * \returns The combined path.
  */
-static std::string get_lua_file_path(const std::string& str1, const std::string& file)
+static path get_lua_file_path(const path& str1, const path& file)
 {
     std::string ans;
     std::string scripts { "scripts" };
     std::string lob { ".lob" };
     std::string lua { ".lua" };
-    std::string base = join(user_dir, scripts);
-    ans = join(base, file + lob);
-    if (!Disk.exists(ans.c_str()))
+    auto script = path { file };
+    auto base = user_dir / path { "scripts" };
+
+    ans = base / script.replace_extension(".lob");
+
+    if (!std::filesystem::exists(ans))
     {
-        ans = join(base, file + lua);
+        ans = base / script.replace_extension(".lua");
 
-        if (!Disk.exists(ans.c_str()))
+        if (!std::filesystem::exists(ans))
         {
-            std::string base = join(str1, scripts);
-            ans = join(base, file + lob);
+            base = str1 / scripts;
+            ans = base / script.replace_extension(".lob");
 
-            if (!Disk.exists(ans.c_str()))
+            if (!std::filesystem::exists(ans))
             {
-                ans = join(base, file + lua);
-
-                if (!Disk.exists(ans.c_str()))
+                ans = base / script.replace_extension(".lua");
+                if (!std::filesystem::exists(ans))
                 {
-                    return std::string();
+                    return {};
                 }
             }
         }
@@ -141,30 +124,32 @@ static std::string get_lua_file_path(const std::string& str1, const std::string&
  * \param   file File name below that directory.
  * \returns the combined path
  */
-const std::string kqres(enum eDirectories dir, const std::string& file)
+const path kqres(enum eDirectories dir, const path& file)
 {
     if (!init_path)
     {
-        std::string save_folder = "kq";
 #ifdef KQ_SAVEDIR
-        save_folder = std::string { KQ_SAVEDIR };
+        const char* save_folder = KQ_SAVEDIR;
+#else
+        const char* save_folder = "kq";
 #endif /* KQ_SAVEDIR */
-        user_dir = std::string(SDL_GetPrefPath("kq-fork", save_folder.c_str()));
+        user_dir = path { SDL_GetPrefPath("kq-fork", save_folder) };
         /* Always try to make the directory, just to be sure. */
-        if (::mkdir(user_dir.c_str(), 0755) == -1)
+        std::error_code ec;
+        std::filesystem::create_directories(user_dir, ec);
+
+        if (ec)
         {
-            if (errno != EEXIST)
-            {
-                Game.program_death("Could not create user directory");
-            }
+            Game.program_death("Could not create user directory");
         }
+
 /* Now the data directory */
 #ifdef KQ_DATADIR
         /* We specified where... */
-        data_dir = lib_dir = std::string { KQ_DATADIR };
+        data_dir = lib_dir = path { KQ_DATADIR };
 #else  /* !KQ_DATADIR */
         /* ...or, use SDL's idea */
-        data_dir = lib_dir = std::string { SDL_GetBasePath() };
+        data_dir = lib_dir = path { SDL_GetBasePath() };
 #endif /* KQ_DATADIR */
         init_path = true;
     }
@@ -181,7 +166,5 @@ const std::string kqres(enum eDirectories dir, const std::string& file)
         return get_resource_file_path(user_dir, "", file);
     case eDirectories::SCRIPT_DIR:
         return get_lua_file_path(lib_dir, file);
-    default:
-        return nullptr;
     }
 }
