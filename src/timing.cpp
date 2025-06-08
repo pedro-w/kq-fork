@@ -53,13 +53,16 @@ static Uint32 timer_cb(Uint32 interval, void* /*unused*/)
 {
     SDL_Event event = { 0 };
 #ifdef WIN32
-    if (IsDebuggerPresent())
-    {
-        // Prevent assertion when paused due to debugging in VS.
-        ++watchdog;
-    }
+    // Prevent assertion when paused due to debugging in VS.
+    if (!IsDebuggerPresent())
 #endif
-    assert(--watchdog > 0);
+    {
+        assert(watchdog > 0);
+        if (watchdog > 0)
+        {
+            --watchdog;
+        }
+    }
     event.type = SDL_USEREVENT;
     SDL_PushEvent(&event);
     return interval;

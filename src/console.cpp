@@ -122,7 +122,6 @@ void KConsole::run()
         Game.get_key();
     }
 
-    bool running = this->on;
     while (this->on /*running*/)
     {
         /* Get a key */
@@ -142,7 +141,7 @@ void KConsole::run()
             if (this->inputline.empty())
             {
                 /* Stop when blank line is entered */
-                running = this->on = false;
+                this->on = false;
             }
             else
             {

@@ -91,19 +91,23 @@ size_t longestString(const std::vector<std::string>& inputs)
  * \returns String that had first been truncated to maxLength characters, then appendString
  *          appended onto it (new string length may exceed maxLength characters).
  */
-std::string truncate_string(std::string input, int maxLength, bool addEllipsis, const std::string& appendString)
+std::string truncate_string(std::string_view input, size_t maxLength, bool addEllipsis, std::string_view appendString)
 {
-    if (maxLength > 0 && input.size() > maxLength)
+    std::string ans;
+    ans.reserve(maxLength + 1 + appendString.size());
+    if (input.size() > maxLength)
     {
-        // Tab (0x09) is rendered as an ellipsis '…'. See 'glyph_lookup' map in draw.cpp.
-        input[maxLength - 1] = '\t';
+        ans.assign(input, 0, maxLength);
+        if (addEllipsis)
+        {
+            ans.append(1, '\t');
+        }
     }
-
-    // The '.*' in this printf notation truncates the (possibly Unicode) text if necessary.
-    // The precision is the parameter right before the text to be formatted (here: maxLength).
-    sprintf(input, "%.*s%s", maxLength, input.c_str(), appendString.c_str());
-
-    return input;
+    else
+    {
+        ans.assign(input);
+    }
+    return ans.append(appendString);
 }
 
 /*! \brief Limit each string in the vector to a maximum length; then append text to end of each.
@@ -122,15 +126,16 @@ std::string truncate_string(std::string input, int maxLength, bool addEllipsis, 
  * \returns Vector of strings that have first been truncated to maxLength characters, then
  *          appendString appended onto each (new string lengths may exceed maxLength characters).
  */
-std::vector<std::string> truncate_strings(std::vector<std::string> inputs, int maxLength, bool addEllipsis,
-                                          const std::string& appendString)
+std::vector<std::string> truncate_strings(const std::vector<std::string>& inputs, int maxLength, bool addEllipsis,
+                                          std::string_view appendString)
 {
+    std::vector<std::string> ans;
     for (auto& input : inputs)
     {
-        input = truncate_string(input, maxLength, addEllipsis, appendString);
+        ans.push_back(truncate_string(input, maxLength, addEllipsis, appendString));
     }
 
-    return inputs;
+    return ans;
 }
 
 // Need input state machine:
@@ -527,7 +532,6 @@ void KEquipMenu::draw_equippable(uint8_t player_index, eEquipment slot, uint16_t
         // equip an item in this list (like a shield). Still show this item but greyed out (other
         // logic will prevent the player from selecting the item and play the SND_BAD effect if
         // they try anyway).
-        const auto eqp_type = selected_item.type;
         bool showItemDisabled = false;
         if (selected_item.type == eEquipment::EQP_SHIELD && heroHasTwoHandedWeaponEquipped)
         {

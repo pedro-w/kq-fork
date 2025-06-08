@@ -378,12 +378,11 @@ void KDraw::draw_char()
         size_t fighter_frame = follower_entity.facing * ENT_FRAMES_PER_DIR;
         if (follower_entity.moving)
         {
-            size_t fighter_frame_add = follower_entity.framectr > 10 ? 1 : 0;
-            fighter_frame = follower_entity.facing * ENT_FRAMES_PER_DIR + fighter_frame_add;
+            fighter_frame += follower_entity.framectr > 10 ? 1 : 0;
         }
         else
         {
-            fighter_frame = follower_entity.facing * ENT_FRAMES_PER_DIR + 2;
+            fighter_frame += 2;
         }
 
         if (fighter_index < PSIZE && fighter_index < numchrs)
