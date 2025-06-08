@@ -21,51 +21,39 @@
 
 #pragma once
 
+#include <filesystem>
 #include <map>
 #include <stack>
 #include <string>
+#include <string_view>
 
 class KConfig
 {
   public:
-    KConfig();
-    ~KConfig() = default;
-
     /*! \brief Set the file where the current config state should be stored.
-     *
-     * You should usually call 'push_config_state()' before calling this.
-     *
      * \param   filename Full path to the file where this config state should be saved.
      */
-    void set_config_file(const std::string& filename);
+    KConfig(const std::filesystem::path& filename);
 
-    void set_config_int(const char* section, const std::string& key, int value);
-    int get_config_int(const char* section, const std::string& key, int defl);
-    void push_config_state();
-    void pop_config_state();
+    /**
+     * Destroy this config.
+     * Saves to disk if needed
+     */
+    ~KConfig() { flush(); }
+
+    void set_config_int(std::string_view key, int value);
+    int get_config_int(std::string_view key, int defl) const;
+    /**
+     *  Store config items to the supplied filename
+     */
+    void flush();
 
   private:
-    struct ConfigLevel
-    {
-        ConfigLevel(const std::string& filename = "");
+    using section_t = std::map<std::string, int, std::less<>>;
+    section_t items;
+    // Full path to file where config is stored.
+    std::filesystem::path filename;
 
-        using section_t = std::map<std::string, int>;
-
-        // Named sections, where "[name]" starts a section block.
-        std::map<std::string, section_t> sections;
-
-        // Default section which is not found under a "[name]" block.
-        section_t unnamed;
-
-        // Full path to file where these sections are stored.
-        std::string filename;
-
-        // Whether or not any changes have been made to this configuration.
-        bool dirty;
-    };
-
-    std::stack<ConfigLevel> levels;
-    ConfigLevel current;
+    // Whether or not any changes have been made to this configuration.
+    bool dirty = false;
 };
-
-extern KConfig Config;

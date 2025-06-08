@@ -111,7 +111,7 @@ static int getavalue(const char* capt, int minu, int maxu, int cv, bool sp, void
  * \param   cfg The configuration key name.
  * \returns True if a new code was received and stored, false otherwise.
  */
-static bool getakey(KPlayerInputButton& b, const char* cfg);
+static bool getakey(KConfig& config, KPlayerInputButton& b, std::string_view cfg);
 
 /*! \brief Ask for window mode.
  *
@@ -225,8 +225,7 @@ void config_menu()
         row[p] = (p + 7) * 8; // (p * 8) + 56
     }
 
-    Config.push_config_state();
-    Config.set_config_file(kqres(eDirectories::SETTINGS_DIR, "kq.cfg"));
+    KConfig config(kqres(eDirectories::SETTINGS_DIR, "kq.cfg"));
     while (!stop)
     {
         Game.ProcessEvents();
@@ -362,41 +361,41 @@ void config_menu()
                     break;
                 }
                 set_graphics_mode();
-                Config.set_config_int(nullptr, "windowed", windowed);
-                Config.set_config_int(nullptr, "window_width", window_width);
-                Config.set_config_int(nullptr, "window_height", window_height);
+                config.set_config_int("windowed", windowed);
+                config.set_config_int("window_width", window_width);
+                config.set_config_int("window_height", window_height);
                 break;
             case eConfigMenu::CMENU_DISPLAY_FRATE:
                 show_frate = !show_frate;
-                Config.set_config_int(nullptr, "show_frate", show_frate);
+                config.set_config_int("show_frate", show_frate);
                 break;
             case eConfigMenu::CMENU_WAIT_RETRACE:
                 wait_retrace = !wait_retrace;
-                Config.set_config_int(nullptr, "wait_retrace", wait_retrace);
+                config.set_config_int("wait_retrace", wait_retrace);
                 break;
             case eConfigMenu::CMENU_REMAP_UP:
-                getakey(PlayerInput.up, "kup");
+                getakey(config, PlayerInput.up, "kup");
                 break;
             case eConfigMenu::CMENU_REMAP_DOWN:
-                getakey(PlayerInput.down, "kdown");
+                getakey(config, PlayerInput.down, "kdown");
                 break;
             case eConfigMenu::CMENU_REMAP_LEFT:
-                getakey(PlayerInput.left, "kleft");
+                getakey(config, PlayerInput.left, "kleft");
                 break;
             case eConfigMenu::CMENU_REMAP_RIGHT:
-                getakey(PlayerInput.right, "kright");
+                getakey(config, PlayerInput.right, "kright");
                 break;
             case eConfigMenu::CMENU_REMAP_CONFIRM:
-                getakey(PlayerInput.balt, "kalt");
+                getakey(config, PlayerInput.balt, "kalt");
                 break;
             case eConfigMenu::CMENU_REMAP_CANCEL:
-                getakey(PlayerInput.bctrl, "kctrl");
+                getakey(config, PlayerInput.bctrl, "kctrl");
                 break;
             case eConfigMenu::CMENU_OPEN_MENU_CHAR:
-                getakey(PlayerInput.benter, "kenter");
+                getakey(config, PlayerInput.benter, "kenter");
                 break;
             case eConfigMenu::CMENU_OPEN_MENU_SYSTEM:
-                getakey(PlayerInput.besc, "kesc");
+                getakey(config, PlayerInput.besc, "kesc");
                 break;
 
             case eConfigMenu::CMENU_TOGGLE_SOUND_AND_MUSIC:
@@ -415,7 +414,7 @@ void config_menu()
                         Music.play_music(Game.Map.g_map.song_file, 0);
                     }
                 }
-                Config.set_config_int(nullptr, "is_sound",
+                config.set_config_int("is_sound",
                                       Audio.sound_initialized_and_ready != KAudio::eSoundSystem::NotInitialized);
                 break;
             case eConfigMenu::CMENU_VOLUME_SOUND:
@@ -429,7 +428,7 @@ void config_menu()
 
                     /* Make sure to set it, no matter what. */
                     Music.set_volume(global_sound_vol);
-                    Config.set_config_int(nullptr, "gsvol", global_sound_vol);
+                    config.set_config_int("gsvol", global_sound_vol);
                 }
                 else
                 /* Not as daft as it seems, SND_BAD also wobbles the screen. */
@@ -448,7 +447,7 @@ void config_menu()
 
                     /* Make sure to set it, no matter what. */
                     Music.set_music_volume(global_music_vol);
-                    Config.set_config_int(nullptr, "gmvol", global_music_vol);
+                    config.set_config_int("gmvol", global_music_vol);
                 }
                 else
                 {
@@ -458,7 +457,7 @@ void config_menu()
             case eConfigMenu::CMENU_ANIMATION_SPEEDUP:
                 /* This reduces the number of frames in some battle animations. */
                 slow_computer = !slow_computer;
-                Config.set_config_int(nullptr, "slow_computer", slow_computer);
+                config.set_config_int("slow_computer", slow_computer);
                 break;
             case eConfigMenu::CMENU_CPU_USAGE:
                 /* TT: Adjust the CPU usage:yield_timeslice() or rest(). */
@@ -488,10 +487,10 @@ void config_menu()
             stop = true;
         }
     }
-    Config.pop_config_state();
+    config.flush();
 }
 
-static bool getakey(KPlayerInputButton& b, const char* cfg)
+static bool getakey(KConfig& config, KPlayerInputButton& b, std::string_view cfg)
 {
     Draw.menubox(double_buffer, 108, 108, 11, 1, eBoxFill::DARK);
     Draw.print_font(double_buffer, 116, 116, _("Press a key"), FNORMAL);
@@ -515,7 +514,7 @@ static bool getakey(KPlayerInputButton& b, const char* cfg)
                 if (a != b.scancode)
                 {
                     b.scancode = a;
-                    Config.set_config_int(nullptr, cfg, a);
+                    config.set_config_int(cfg, a);
                 }
                 // Wait to close the "Press a key" dialog until the user releases the new key.
                 Game.wait_released();
@@ -631,47 +630,46 @@ static int load_samples()
 
 void parse_setup()
 {
-    Config.push_config_state();
-    Config.set_config_file(kqres(eDirectories::SETTINGS_DIR, "kq.cfg"));
+    KConfig config(kqres(eDirectories::SETTINGS_DIR, "kq.cfg"));
 
     /* NB. JB's config file uses intro=yes --> skip_intro=0 */
-    skip_intro = Config.get_config_int(nullptr, "skip_intro", 0);
-    windowed = Config.get_config_int(nullptr, "windowed", 1);
-    should_stretch_view = Config.get_config_int(nullptr, "stretch_view", 1) != 0;
-    wait_retrace = Config.get_config_int(nullptr, "wait_retrace", 1);
-    show_frate = Config.get_config_int(nullptr, "show_frate", 0) != 0;
+    skip_intro = config.get_config_int("skip_intro", 0);
+    windowed = config.get_config_int("windowed", 1);
+    should_stretch_view = config.get_config_int("stretch_view", 1) != 0;
+    wait_retrace = config.get_config_int("wait_retrace", 1);
+    show_frate = config.get_config_int("show_frate", 0) != 0;
     Audio.sound_initialized_and_ready =
-        (KAudio::eSoundSystem)Config.get_config_int(nullptr, "is_sound", KAudio::eSoundSystem::Initialize);
-    global_music_vol = Config.get_config_int(nullptr, "gmvol", 250);
-    global_sound_vol = Config.get_config_int(nullptr, "gsvol", 250);
+        (KAudio::eSoundSystem)config.get_config_int("is_sound", KAudio::eSoundSystem::Initialize);
+    global_music_vol = config.get_config_int("gmvol", 250);
+    global_sound_vol = config.get_config_int("gsvol", 250);
     extern int use_joy;
-    use_joy = Config.get_config_int(nullptr, "use_joy", 0);
-    slow_computer = Config.get_config_int(nullptr, "slow_computer", 0);
-    cpu_usage = Config.get_config_int(nullptr, "cpu_usage", 2);
+    use_joy = config.get_config_int("use_joy", 0);
+    slow_computer = config.get_config_int("slow_computer", 0);
+    cpu_usage = config.get_config_int("cpu_usage", 2);
 #ifdef KQ_CHEATS
-    Game.set_cheat(Config.get_config_int(nullptr, "cheat", 0));
-    Game.set_no_random_encounters(Config.get_config_int(nullptr, "no_random_encounters", 0));
-    Game.set_no_monsters(Config.get_config_int(nullptr, "no_monsters", 0));
-    Game.set_every_hit_999(Config.get_config_int(nullptr, "every_hit_999", 0));
+    Game.set_cheat(config.get_config_int("cheat", 0));
+    Game.set_no_random_encounters(config.get_config_int("no_random_encounters", 0));
+    Game.set_no_monsters(config.get_config_int("no_monsters", 0));
+    Game.set_every_hit_999(config.get_config_int("every_hit_999", 0));
 #endif /* KQ_CHEATS */
 #ifdef DEBUGMODE
-    debugging = Config.get_config_int(nullptr, "debugging", 0);
+    debugging = config.get_config_int("debugging", 0);
 #endif /* DEBUGMODE */
 
-    PlayerInput.up.scancode = Config.get_config_int(nullptr, "kup", SDL_SCANCODE_UP);
-    PlayerInput.down.scancode = Config.get_config_int(nullptr, "kdown", SDL_SCANCODE_DOWN);
-    PlayerInput.left.scancode = Config.get_config_int(nullptr, "kleft", SDL_SCANCODE_LEFT);
-    PlayerInput.right.scancode = Config.get_config_int(nullptr, "kright", SDL_SCANCODE_RIGHT);
-    PlayerInput.besc.scancode = Config.get_config_int(nullptr, "kesc", SDL_SCANCODE_ESCAPE);
-    PlayerInput.balt.scancode = Config.get_config_int(nullptr, "kalt", SDL_SCANCODE_LALT);
-    PlayerInput.bctrl.scancode = Config.get_config_int(nullptr, "kctrl", SDL_SCANCODE_LCTRL);
-    PlayerInput.benter.scancode = Config.get_config_int(nullptr, "kenter", SDL_SCANCODE_RETURN);
+    PlayerInput.up.scancode = config.get_config_int("kup", SDL_SCANCODE_UP);
+    PlayerInput.down.scancode = config.get_config_int("kdown", SDL_SCANCODE_DOWN);
+    PlayerInput.left.scancode = config.get_config_int("kleft", SDL_SCANCODE_LEFT);
+    PlayerInput.right.scancode = config.get_config_int("kright", SDL_SCANCODE_RIGHT);
+    PlayerInput.besc.scancode = config.get_config_int("kesc", SDL_SCANCODE_ESCAPE);
+    PlayerInput.balt.scancode = config.get_config_int("kalt", SDL_SCANCODE_LALT);
+    PlayerInput.bctrl.scancode = config.get_config_int("kctrl", SDL_SCANCODE_LCTRL);
+    PlayerInput.benter.scancode = config.get_config_int("kenter", SDL_SCANCODE_RETURN);
 
     window_width =
-        Config.get_config_int(nullptr, "window_width", should_stretch_view ? eSize::SCALED_SCREEN_W : eSize::SCREEN_W);
+        config.get_config_int("window_width", should_stretch_view ? eSize::SCALED_SCREEN_W : eSize::SCREEN_W);
     window_height =
-        Config.get_config_int(nullptr, "window_height", should_stretch_view ? eSize::SCALED_SCREEN_H : eSize::SCREEN_H);
-    Config.pop_config_state();
+        config.get_config_int("window_height", should_stretch_view ? eSize::SCALED_SCREEN_H : eSize::SCREEN_H);
+    config.flush();
 }
 
 void play_effect(int efc, int panning)
@@ -827,11 +825,10 @@ void store_window_size()
     if (window_width != new_width && window_height != new_height)
     {
         // Need to store it
-        Config.push_config_state();
-        Config.set_config_file(kqres(eDirectories::SETTINGS_DIR, "kq.cfg"));
-        Config.set_config_int(nullptr, "window_width", new_width);
-        Config.set_config_int(nullptr, "window_height", new_height);
-        Config.pop_config_state();
+        KConfig config(kqres(eDirectories::SETTINGS_DIR, "kq.cfg"));
+        config.set_config_int("window_width", new_width);
+        config.set_config_int("window_height", new_height);
+        config.flush();
     }
 }
 

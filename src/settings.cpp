@@ -20,28 +20,64 @@
 */
 
 #include "settings.h"
+#include "kq.h"
+#include "platform.h"
 
+#include <SDL.h>
+#include <charconv>
+#include <filesystem>
 #include <fstream>
 #include <string>
 
-KConfig Config;
+using std::filesystem::path;
 
-KConfig::KConfig()
-    : current("")
-{
-}
+static bool init_path = false;
+static path user_dir;
+static path data_dir;
+static path lib_dir;
 
-KConfig::ConfigLevel::ConfigLevel(const std::string& _filename)
+static std::string_view strip(std::string_view);
+
+KConfig::KConfig(const path& _filename)
     : filename { _filename }
-    , dirty { false }
 {
+    std::ifstream is(filename);
+    while (is)
+    {
+        std::string line_string;
+        std::getline(is, line_string);
+        auto line = strip(line_string);
+        if (!line.empty())
+        {
+            if (line.front() == '[' && line.back() == ']')
+            {
+                // Have hit an unnamed section, therefore
+                // don't load anything else
+                break;
+            }
+            else
+            {
+                auto pos = line.find('=');
+                if (pos != std::string_view::npos)
+                {
+                    std::string key { strip(line.substr(0, pos)) };
+                    auto val = strip(line.substr(pos + 1));
+                    int iv;
+                    auto [_ptr, ec] = std::from_chars(val.begin(), val.end(), iv);
+                    if (ec == std::errc {})
+                    {
+                        items.insert_or_assign(key, iv);
+                    } // else: an error, what do we do with it?
+                }
+            }
+        }
+    }
 }
 
-int KConfig::get_config_int(const char* section, const std::string& key, int defl)
+int KConfig::get_config_int(std::string_view key, int defl) const
 {
-    KConfig::ConfigLevel::section_t& data = section ? current.sections[section] : current.unnamed;
-    auto it = data.find(key);
-    if (it != data.end())
+    auto it = items.find(key);
+    if (it != items.end())
     {
         return it->second;
     }
@@ -51,82 +87,162 @@ int KConfig::get_config_int(const char* section, const std::string& key, int def
     }
 }
 
-void KConfig::set_config_int(const char* section, const std::string& key, int value)
+void KConfig::set_config_int(std::string_view key, int value)
 {
-    KConfig::ConfigLevel::section_t& data = section ? current.sections[section] : current.unnamed;
-    data[key] = value;
-    current.dirty = true;
-}
-
-void KConfig::push_config_state()
-{
-    levels.push(std::move(current));
-    current = ConfigLevel("");
-}
-
-void KConfig::pop_config_state()
-{
-    if (current.dirty && !current.filename.empty())
+    auto [it, inserted] = items.try_emplace(std::string { key });
+    if (inserted || it->second != value)
     {
-        std::ofstream os(current.filename);
-        for (const auto& i : current.unnamed)
+        dirty = true;
+    }
+    it->second = value;
+}
+
+void KConfig::flush()
+{
+    if (dirty && !filename.empty())
+    {
+        std::ofstream os(filename);
+        for (const auto& i : items)
         {
             os << i.first << "=" << i.second << std::endl;
         }
-        for (auto& j : current.sections)
-        {
-            os << '[' << j.first << ']' << std::endl;
-            for (const auto& i : j.second)
-            {
-                os << i.first << "=" << i.second << std::endl;
-            }
-        }
     }
-    current = std::move(levels.top());
-    levels.pop();
+    dirty = false;
 }
 
-static std::string strip(std::string s)
+static std::string_view strip(std::string_view s)
 {
     auto l = s.find_first_not_of(" \t");
-    if (l == std::string::npos)
+    if (l == std::string_view::npos)
     {
-        return std::string {};
+        return {};
     }
     auto r = s.find_last_not_of(" \t");
     return s.substr(l, 1 + r - l);
 }
 
-void KConfig::set_config_file(const std::string& filename)
+/*! \brief Returns the full path for this file.
+ *
+ * This function first checks if the file can be found in the user's directory.
+ * If it can not, it checks the relevant game directory (data, music, lib, etc).
+ *
+ * \param   str1 The first part of the path (i.e. the install dir, for example "/usr/local/share/kq/").
+ * \param   str2 The second part of the string (eg. "maps").
+ * \param   file The filename.
+ * \returns The combined path.
+ */
+static path get_resource_file_path(const path& str1, const path& str2, const path& file)
 {
-    std::ifstream is(filename);
-    std::string line;
-    std::string section;
-    bool unnamed_section = true;
-    current = ConfigLevel(filename);
-    while (is)
+    auto tail = str2 / file;
+    auto ans = user_dir / tail;
+
+    if (std::filesystem::exists(ans))
     {
-        std::getline(is, line);
-        line = strip(line);
-        if (!line.empty())
+        return ans;
+    }
+    else
+    {
+        return str1 / tail;
+    }
+}
+
+/*! \brief Returns the full path for this lua file.
+ *
+ * This function first checks if the lua file can be found in the user's directory.
+ * If it can not, it checks the relevant game directory (scripts).
+ *
+ * For each directory, it first checks for a lob file, and then it checks for a lua file.
+ *
+ * This function is similar to get_resource_file_path(), but takes special considerations for lua files.
+ *
+ * Whereas get_resource_file_path() takes the full filename (eg. "main.map"), this function takes the filename without
+ * extension (eg "main").
+ *
+ * \param   str1 The first part of the path (the install path, eg. "/usr/local/lib/kq").
+ * \param   file The filename.
+ * \returns The combined path.
+ */
+static path get_lua_file_path(const path& str1, const path& file)
+{
+    std::string ans;
+    std::string scripts { "scripts" };
+    std::string lob { ".lob" };
+    std::string lua { ".lua" };
+    auto script = path { file };
+    auto base = user_dir / path { "scripts" };
+
+    ans = base / script.replace_extension(".lob");
+
+    if (!std::filesystem::exists(ans))
+    {
+        ans = base / script.replace_extension(".lua");
+
+        if (!std::filesystem::exists(ans))
         {
-            if (line.front() == '[' && line.back() == ']')
+            base = str1 / scripts;
+            ans = base / script.replace_extension(".lob");
+
+            if (!std::filesystem::exists(ans))
             {
-                // section
-                unnamed_section = false;
-                section = line.substr(1, line.size() - 1);
-            }
-            else
-            {
-                auto pos = line.find('=');
-                if (pos != std::string::npos)
+                ans = base / script.replace_extension(".lua");
+                if (!std::filesystem::exists(ans))
                 {
-                    auto key = strip(line.substr(0, pos));
-                    auto val = strip(line.substr(pos + 1));
-                    int iv = std::stoi(val);
-                    set_config_int(unnamed_section ? nullptr : section.c_str(), key.c_str(), iv);
+                    return {};
                 }
             }
         }
+    }
+
+    return ans;
+}
+
+/*! \brief Return the name of 'significant' directories.
+ *
+ * \param   dir Enumerated constant for directory type \sa DATA_DIR et al.
+ * \param   file File name below that directory.
+ * \returns the combined path
+ */
+const path kqres(enum eDirectories dir, const path& file)
+{
+    if (!init_path)
+    {
+#ifdef KQ_SAVEDIR
+        const char* save_folder = KQ_SAVEDIR;
+#else
+        const char* save_folder = "kq";
+#endif /* KQ_SAVEDIR */
+        user_dir = path { SDL_GetPrefPath("kq-fork", save_folder) };
+        /* Always try to make the directory, just to be sure. */
+        std::error_code ec;
+        std::filesystem::create_directories(user_dir, ec);
+
+        if (ec)
+        {
+            Game.program_death("Could not create user directory");
+        }
+
+/* Now the data directory */
+#ifdef KQ_DATADIR
+        /* We specified where... */
+        data_dir = lib_dir = path { KQ_DATADIR };
+#else  /* !KQ_DATADIR */
+        /* ...or, use SDL's idea */
+        data_dir = lib_dir = path { SDL_GetBasePath() };
+#endif /* KQ_DATADIR */
+        init_path = true;
+    }
+    switch (dir)
+    {
+    case eDirectories::DATA_DIR:
+        return get_resource_file_path(data_dir, "data", file);
+    case eDirectories::MUSIC_DIR:
+        return get_resource_file_path(data_dir, "music", file);
+    case eDirectories::MAP_DIR:
+        return get_resource_file_path(data_dir, "maps", file);
+    case eDirectories::SAVE_DIR:
+    case eDirectories::SETTINGS_DIR:
+        return get_resource_file_path(user_dir, "", file);
+    case eDirectories::SCRIPT_DIR:
+        return get_lua_file_path(lib_dir, file);
     }
 }

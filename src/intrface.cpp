@@ -676,10 +676,10 @@ void do_entity(int en_num)
 void do_luacheat()
 {
 #ifdef KQ_CHEATS
-    /* kqres might return null if the cheat file doesn't exist.
+    /* kqres might return empty file if the cheat file doesn't exist.
      * in that case, just do a no-op.
      */
-    std::string cheatfile = kqres(eDirectories::SCRIPT_DIR, "cheat");
+    auto cheatfile = kqres(eDirectories::SCRIPT_DIR, "cheat");
     if (!cheatfile.empty())
     {
         lua_dofile(theL, cheatfile.c_str());

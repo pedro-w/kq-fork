@@ -27,11 +27,13 @@
 #include "res.h"
 
 #include <cstdio>
+#include <filesystem>
 #include <memory>
 #include <png.h>
 #include <string>
 
-typedef std::unique_ptr<Raster> BITMAP_PTR;
+using BITMAP_PTR = std::unique_ptr<Raster>;
+using std::filesystem::path;
 
 struct RasterLoader
 {
@@ -92,7 +94,7 @@ static int palindex(uint8_t* ptr)
  * \param   path The filename.
  * \returns The bitmap.
  */
-static Raster* bmp_from_png(const std::string& path)
+static Raster* bmp_from_png(const path& path)
 {
     png_image image;
     image.version = PNG_IMAGE_VERSION;
@@ -125,7 +127,7 @@ static Raster* bmp_from_png(const std::string& path)
     return bitmap;
 }
 #else  // !PNG_SIMPLIFIED_READ_SUPPORTED
-static Raster* bmp_from_png(const std::string& path)
+static Raster* bmp_from_png(const path& path)
 {
     FILE* fp = std::fopen(path.c_str(), "rb");
     if (!fp)
