@@ -34,6 +34,7 @@
 #include "enums.h"
 
 #include <cstdint>
+#include <string>
 
 class Raster;
 
@@ -83,7 +84,8 @@ struct KQEntity
     /*! Whether the entity is visible (true) or not (false) on the map. */
     uint8_t active;
 
-    /*! See eDirection: value from [0..3] (often multiplied by ENT_FRAMES_PER_DIR to determine animation frame to render). */
+    /*! See eDirection: value from [0..3] (often multiplied by ENT_FRAMES_PER_DIR to determine animation frame to
+     * render). */
     uint8_t facing;
 
     /*! \brief In the middle of a move.
@@ -178,7 +180,7 @@ struct KQEntity
     uint8_t transl;
 
     /*! Movement/action script (pacing, etc.). */
-    char script[60];
+    std::string script;
 
     /*! Scripted x-coord the ent is moving to. */
     uint16_t target_x;

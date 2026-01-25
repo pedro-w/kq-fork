@@ -92,7 +92,7 @@ set(kq-fork_SRCS
 	$<$<PLATFORM_ID:Linux,Darwin>:src/unix.cpp>
 	$<$<PLATFORM_ID:Windows>:src/win.cpp>
 )
-set(PNG_LIBRARIES PNG::PNG)
+#set(PNG_LIBRARIES PNG::PNG)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/include/external")
 add_compile_definitions("$<$<CONFIG:DEBUG>:DEBUGMODE;KQ_CHEATS>")

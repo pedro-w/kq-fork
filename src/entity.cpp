@@ -119,16 +119,16 @@ void KEntityManager::process_entities()
     }
 }
 
-void KEntityManager::set_script(t_entity target_entity, const char* movestring)
+void KEntityManager::set_script(t_entity target_entity, std::string_view movestring)
 {
     KQEntity& ent = g_ent[target_entity];
-    ent.moving = 0;                    // Stop entity from moving
-    ent.movcnt = 0;                    // Reset the move counter to 0
-    ent.cmd = eCommands::COMMAND_NONE; // Entity should not be trying to move
-    ent.sidx = 0;                      // Reset script command index
-    ent.cmdnum = 0;                    // There are no scripted commands
+    ent.moving = 0;                      // Stop entity from moving
+    ent.movcnt = 0;                      // Reset the move counter to 0
+    ent.cmd = eCommands::COMMAND_NONE;   // Entity should not be trying to move
+    ent.sidx = 0;                        // Reset script command index
+    ent.cmdnum = 0;                      // There are no scripted commands
     ent.movemode = eMoveMode::MM_SCRIPT; // Force the entity to follow the script
-    strncpy(ent.script, movestring, sizeof(ent.script));
+    ent.script = std::string(movestring);
 }
 
 void KEntityManager::chase(t_entity target_entity)
@@ -319,7 +319,7 @@ void KEntityManager::getcommand(t_entity target_entity)
     KQEntity& ent = g_ent[target_entity];
 
     /* PH FIXME: prevented from running off end of string */
-    if (ent.sidx < sizeof(ent.script))
+    if (ent.sidx < ent.script.size())
     {
         s = ent.script[ent.sidx++];
     }
@@ -428,8 +428,8 @@ int KEntityManager::move(t_entity target_entity, signed int dx, signed int dy)
     const int lastIndex = Game.Map.MapSize() - 1;
     int tile_x = std::clamp<int>(ent.x / TILE_W, 0, lastIndex);
     int tile_y = std::clamp<int>(ent.y / TILE_H, 0, lastIndex);
-    if (tile_x + dx < 0 || tile_x + dx >= (int)Game.Map.g_map.xsize ||
-        tile_y + dy < 0 || tile_y + dy >= (int)Game.Map.g_map.ysize)
+    if (tile_x + dx < 0 || tile_x + dx >= (int)Game.Map.g_map.xsize || tile_y + dy < 0 ||
+        tile_y + dy >= (int)Game.Map.g_map.ysize)
     {
         return 0;
     }
@@ -447,8 +447,7 @@ int KEntityManager::move(t_entity target_entity, signed int dx, signed int dy)
             //      there is NO obstruction/entity diagonally-down, AND
             //      there is also NO obstruction/entity straight down
             // Then: have the entity move diagonally-down.
-            if (dy >= 0 && oldfacing == ent.facing &&
-                !obstruction(tile_x, tile_y + 1, dx, 0, true) &&
+            if (dy >= 0 && oldfacing == ent.facing && !obstruction(tile_x, tile_y + 1, dx, 0, true) &&
                 !obstruction(tile_x, tile_y, 0, 1, true))
             {
                 // The entity may not have been trying moving down before, but make it try to now.
@@ -459,9 +458,8 @@ int KEntityManager::move(t_entity target_entity, signed int dx, signed int dy)
             //      there is NO obstruction/entity diagonally-up, AND
             //      there is also NO obstruction straight up
             // Then: have the entity move diagonally-up.
-            else if (dy <= 0 && oldfacing == ent.facing &&
-                !obstruction(tile_x, tile_y - 1, dx, 0, true) &&
-                !obstruction(tile_x, tile_y, 0, -1, true))
+            else if (dy <= 0 && oldfacing == ent.facing && !obstruction(tile_x, tile_y - 1, dx, 0, true) &&
+                     !obstruction(tile_x, tile_y, 0, -1, true))
             {
                 // The entity may not have been trying moving up before, but make it try to now.
                 dy = -1;
@@ -483,8 +481,7 @@ int KEntityManager::move(t_entity target_entity, signed int dx, signed int dy)
             //      there is NO obstruction/entity diagonally-right, AND
             //      there is also NO obstruction/entity straight right
             // Then: have the entity move diagonally-right.
-            if (dx >= 0 && oldfacing == ent.facing &&
-                !obstruction(tile_x + 1, tile_y, 0, dy, true) &&
+            if (dx >= 0 && oldfacing == ent.facing && !obstruction(tile_x + 1, tile_y, 0, dy, true) &&
                 !obstruction(tile_x, tile_y, 1, 0, true))
             {
                 // The entity may not have been trying moving right before, but make it try to now.
@@ -495,9 +492,8 @@ int KEntityManager::move(t_entity target_entity, signed int dx, signed int dy)
             //      there is NO obstruction/entity diagonally-left, AND
             //      there is also NO obstruction/entity straight left
             // Then: have the entity move diagonally-left.
-            else if (dx <= 0 && oldfacing == ent.facing &&
-                !obstruction(tile_x - 1, tile_y, 0, dy, true) &&
-                !obstruction(tile_x, tile_y, -1, 0, true))
+            else if (dx <= 0 && oldfacing == ent.facing && !obstruction(tile_x - 1, tile_y, 0, dy, true) &&
+                     !obstruction(tile_x, tile_y, -1, 0, true))
             {
                 // The entity may not have been trying moving left before, but make it try to now.
                 dx = -1;
@@ -593,8 +589,7 @@ int KEntityManager::move(t_entity target_entity, signed int dx, signed int dy)
     // Make sure player can't walk diagonally between active entities.
     if (dx != 0 && dy != 0)
     {
-        if (obstruction(tile_x, tile_y, dx, 0, true) &&
-            obstruction(tile_x, tile_y, 0, dy, true))
+        if (obstruction(tile_x, tile_y, dx, 0, true) && obstruction(tile_x, tile_y, 0, dy, true))
         {
             return 0;
         }

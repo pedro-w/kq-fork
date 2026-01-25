@@ -162,7 +162,7 @@ const std::string kqres(enum eDirectories dir, const std::string& file)
 #ifdef KQ_DATADIR
         /* We specified where... */
         data_dir = lib_dir = std::string { KQ_DATADIR };
-#else /* !KQ_DATADIR */
+#else  /* !KQ_DATADIR */
         /* ...or, use SDL's idea */
         data_dir = lib_dir = std::string { SDL_GetBasePath() };
 #endif /* KQ_DATADIR */

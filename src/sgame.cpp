@@ -616,19 +616,18 @@ int KSaveGame::start_menu(bool skip_splash)
 bool KSaveGame::system_menu()
 {
     int stop = 0, ptr = 0;
-    char save_str[10];
+    const char* save_str = _("Save  ");
     eFontColor text_color = FNORMAL;
-    strcpy(save_str, _("Save  "));
 
     if (cansave == 0)
     {
 #ifdef KQ_CHEATS
         if (Game.cheat())
         {
-            strcpy(save_str, _("[Save]"));
+            save_str = _("[Save]");
             text_color = FNORMAL;
         }
-#else /* !KQ_CHEATS */
+#else  /* !KQ_CHEATS */
         text_color = FDARK;
 #endif /* KQ_CHEATS */
     }
@@ -674,7 +673,7 @@ bool KSaveGame::system_menu()
                 // Pointer is over the SAVE option
 #ifdef KQ_CHEATS
                 if (cansave == 1 || Game.cheat())
-#else /* !KQ_CHEATS */
+#else  /* !KQ_CHEATS */
                 if (cansave == 1)
 #endif /* KQ_CHEATS */
                 {

@@ -51,13 +51,12 @@ using CellQueue = std::queue<Cell>;
  * \param[in] target_x Target x coordinate.
  * \param[in] target_y Target y coordinate.
  * \param[out] buffer Buffer to store the solution.
- * \param[in] size Size of the solution buffer.
  * \returns If the solution was copied.
  *          0 The solution was copied.
  *          1 The buffer was too small for the solution to be copied.
  *          2 There was no solution, or internal error.
  */
-static int compose_path(const int* map, uint32_t x, uint32_t y, char* buffer, size_t size);
+static int compose_path(const int* map, uint32_t x, uint32_t y, std::string& buffer);
 
 /*! \brief Unused. */
 static int minimize_path(const std::vector<char>& /*unused*/, char* /*unused*/, size_t /*unused*/);
@@ -111,7 +110,7 @@ static std::string append(char& current, int& rep, char c)
     return result;
 }
 
-static int compose_path(const int* map, uint32_t x, uint32_t y, char* buffer, size_t size)
+static int compose_path(const int* map, uint32_t x, uint32_t y, std::string& buffer)
 {
     int value = map[Game.Map.Clamp(x, y)];
     std::string result;
@@ -158,19 +157,8 @@ static int compose_path(const int* map, uint32_t x, uint32_t y, char* buffer, si
     }
     // Final call to flush out last direction
     result += append(current_direction, repetition, 0);
-    // NOTE: in the future we might output a std::string directly
-    if (result.size() < size - 1)
-    {
-        // it fits, copy and null terminate
-        auto endp = std::copy(std::begin(result), std::end(result), buffer);
-        *endp = '\0';
-        return 0;
-    }
-    else
-    {
-        // doesn't fit
-        return 1;
-    }
+    buffer = result;
+    return 0;
 }
 
 /*! \brief Generates an internal map.
@@ -184,7 +172,7 @@ static int compose_path(const int* map, uint32_t x, uint32_t y, char* buffer, si
  */
 static std::unique_ptr<int[]> copy_map()
 {
-    auto map = std::unique_ptr<int[]>(new int[Game.Map.MapSize()]);
+    auto map = std::make_unique<int[]>(Game.Map.MapSize());
     // Set any tile to -1 when there's an obstacle or active (as in, visible on the map) entity there.
     for (size_t y = 0; y < Game.Map.g_map.ysize; y++)
     {
@@ -212,27 +200,23 @@ static std::unique_ptr<int[]> copy_map()
             map[index] = -1;
         }
     }
-    return std::move(map);
+    return map;
 }
 
 int find_path(size_t entity_id, uint32_t source_x, uint32_t source_y, uint32_t target_x, uint32_t target_y,
-              char* buffer, uint32_t size)
+              std::string& buffer)
 {
-    if (buffer == nullptr || size == 0)
-    {
-        return 3;
-    }
     auto map = copy_map();
     map[Game.Map.Clamp(source_x, source_y)] = INT_MAX;
     search_paths(map.get(), target_x, target_y, 0, 0, Game.Map.g_map.xsize, Game.Map.g_map.ysize);
 
     if (map[Game.Map.Clamp(source_x, source_y)] < INT_MAX)
     {
-        return compose_path(map.get(), source_x, source_y, buffer, size);
+        return compose_path(map.get(), source_x, source_y, buffer);
     }
     else
     {
-        buffer[0] = '\0';
+        buffer = {};
         return 1;
     }
 }

@@ -22,6 +22,7 @@
 #pragma once
 
 #include "enums.h"
+#include <array>
 
 /*! \brief Save Game Stats.
  *
@@ -36,7 +37,8 @@ struct s_sgstats
     struct _characters
     {
         int id, level, hp, mp;
-    } characters[PSIZE];
+    };
+    std::array<_characters, PSIZE> characters;
 
     /*! \brief Get the save-game stats that apply to the current state.
      *
@@ -125,7 +127,7 @@ class KSaveGame
   protected:
     /* These describe the save slots. Number of characters, gp, etc */
     /* They are used to make the save menu prettier. */
-    s_sgstats savegame[NUMSG];
+    std::array<s_sgstats, NUMSG> savegame;
 
     /* Which save_slot the player is pointing to */
     int save_ptr = 0;

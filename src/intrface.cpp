@@ -131,12 +131,30 @@ int lua_dofile(lua_State* L, const char* filename);
  *
  * Calculate what's the real entity number, given an enemy number or HERO1 or HERO2.
  * It will decode an object (e.g. entity[0] or party[0]).
+ * Returns 255 if there is no such entity.
  *
  * \param   L Lua state.
  * \param   pos Position on the lua stack.
  * \returns Real entity number.
  */
 static int real_entity_num(lua_State* L, int pos);
+
+/*! \brief Process and check HERO1 and HERO2 pseudo-entity numbers.
+ * As real_entity_num but terminate the program if there
+ * is no such entity.
+ * \param   L Lua state.
+ * \param   pos Position on the lua stack.
+ * \returns Real entity number.
+ */
+static int checked_entity_num(lua_State* L, int pos)
+{
+    int num = real_entity_num(L, pos);
+    if (num == 255)
+    {
+        Game.program_death("Invalid entity");
+    }
+    return num;
+}
 
 // void remove_special_item (int index);
 
@@ -542,24 +560,24 @@ static struct s_field
 
 // *INDENT-OFF*
 fields[] = {
-    { "name",   PROP_NAME   }, // KPlayer::name: Name of entity
-    { "xp",     PROP_XP     }, // KPlayer::xp: Entity experience
-    { "next",   PROP_NEXT   }, // KPlayer::next: Experience left for next level-up
-    { "lvl",    PROP_LVL    }, // KPlayer::lvl: Current level of entity
-    { "mrp",    PROP_MRP    }, // KPlayer::mrp: Magic actually required for a spell (can be reduced with I_MANALOCKET)
-    { "hp",     PROP_HP     }, // KPlayer::hp: Entity's current hit points
-    { "mhp",    PROP_MHP    }, // KPlayer::mhp: Maximum hit points
-    { "mp",     PROP_MP     }, // KPlayer::mp: Current magic points
-    { "mmp",    PROP_MMP    }, // KPlayer::mmp: Maximum magic points
-    { "id",     PROP_ID     }, // Offset between &party[0] and &party[N] (position within the party)
-    { "tilex",  PROP_TILEX  }, // KQEntity::tilex: Position of entity, full x tile
-    { "tiley",  PROP_TILEY  }, // KQEntity::tiley: Position of entity, full y tile
-    { "eid",    PROP_EID    }, // KQEntity::eid: Entity ID
-    { "chrx",   PROP_CHRX   }, // KQEntity::chrx: Appearance of entity
+    { "name", PROP_NAME },     // KPlayer::name: Name of entity
+    { "xp", PROP_XP },         // KPlayer::xp: Entity experience
+    { "next", PROP_NEXT },     // KPlayer::next: Experience left for next level-up
+    { "lvl", PROP_LVL },       // KPlayer::lvl: Current level of entity
+    { "mrp", PROP_MRP },       // KPlayer::mrp: Magic actually required for a spell (can be reduced with I_MANALOCKET)
+    { "hp", PROP_HP },         // KPlayer::hp: Entity's current hit points
+    { "mhp", PROP_MHP },       // KPlayer::mhp: Maximum hit points
+    { "mp", PROP_MP },         // KPlayer::mp: Current magic points
+    { "mmp", PROP_MMP },       // KPlayer::mmp: Maximum magic points
+    { "id", PROP_ID },         // Offset between &party[0] and &party[N] (position within the party)
+    { "tilex", PROP_TILEX },   // KQEntity::tilex: Position of entity, full x tile
+    { "tiley", PROP_TILEY },   // KQEntity::tiley: Position of entity, full y tile
+    { "eid", PROP_EID },       // KQEntity::eid: Entity ID
+    { "chrx", PROP_CHRX },     // KQEntity::chrx: Appearance of entity
     { "facing", PROP_FACING }, // KQEntity::facing: Direction facing
     { "active", PROP_ACTIVE }, // KQEntity::active: Active or not
-    { "say",    PROP_SAY    }, // Text bubble (may be deprecated: see function bubble() in global.lua)
-    { "think",  PROP_THINK  }, // Thought bubble (may be deprecated: see function thought() in global.lua)
+    { "say", PROP_SAY },       // Text bubble (may be deprecated: see function bubble() in global.lua)
+    { "think", PROP_THINK },   // Thought bubble (may be deprecated: see function thought() in global.lua)
 };
 
 // *INDENT-ON*
@@ -647,7 +665,7 @@ template<typename... Args> static bool call_global(const char* funcname, Args...
 #ifdef DEBUGMODE
         // protected call - KQ_traceback shows error message if there is one.
         lua_pcall(theL, sizeof...(args), 0, oldtop + 1);
-#else /* !DEBUGMODE */
+#else  /* !DEBUGMODE */
         // Unprotected call - lua will abort with an error message
         lua_call(theL, sizeof...(args), 0);
 #endif /* DEBUGMODE */
@@ -655,6 +673,25 @@ template<typename... Args> static bool call_global(const char* funcname, Args...
     }
     lua_settop(theL, oldtop);
     return status;
+}
+/**
+ * Copy a string to a limited space.
+ * If it won't fit, exit the program.
+ * @param dest the destination buffer
+ * @param size the size of that buffer
+ * @param src the source string
+ */
+static void kstrcpy(char* dest, size_t size, const char* src)
+{
+    size_t ssize = strlen(src) + 1;
+    if (ssize <= size)
+    {
+        std::copy_n(src, ssize, dest);
+    }
+    else
+    {
+        Game.program_death("Internal error: string too long");
+    }
 }
 
 void do_autoexec()
@@ -672,7 +709,6 @@ void do_entity(int en_num)
         KQ_check_map_change();
     }
 }
-
 
 void do_luacheat()
 {
@@ -1153,11 +1189,11 @@ static int KQ_calc_viewport(lua_State* /*L*/)
  */
 static int KQ_change_map(lua_State* L)
 {
-    strcpy(tmap_name, lua_tostring(L, 1));
+    kstrcpy(tmap_name, sizeof tmap_name, lua_tostring(L, 1));
     if (lua_type(L, 2) == LUA_TSTRING)
     {
         /* it's the ("map", "marker") form */
-        strcpy(marker_name, lua_tostring(L, 2));
+        kstrcpy(marker_name, sizeof marker_name, lua_tostring(L, 2));
         tmx = (int)lua_tonumber(L, 3);
         tmy = (int)lua_tonumber(L, 4);
         changing_map = CHANGE_TO_MARKER;
@@ -1542,8 +1578,10 @@ static int KQ_copy_ent(lua_State* L)
 {
     int a = real_entity_num(L, 1);
     int b = real_entity_num(L, 2);
-
-    g_ent[b] = g_ent[a];
+    if (!(a == 255 || b == 255))
+    {
+        g_ent[b] = g_ent[a];
+    }
     return 0;
 }
 
@@ -1741,7 +1779,7 @@ static int KQ_face_each_other(lua_State* L)
     int a = real_entity_num(L, 1);
     int b = real_entity_num(L, 2);
 
-    if (numchrs == 2)
+    if (a != 255 && b != 255 && numchrs == 2)
     {
         auto& entityA = g_ent[a];
         auto& entityB = g_ent[b];
@@ -1794,16 +1832,22 @@ static int KQ_get_bounds(lua_State* L)
     if (lua_isnumber(L, 1))
     {
         a = real_entity_num(L, 1);
-
-        ent_x = g_ent[a].tilex;
-        ent_y = g_ent[a].tiley;
-        if (Game.Map.g_map.bounds.IsBound(found_index, ent_x, ent_y, ent_x, ent_y))
+        if (a == 255)
         {
-            lua_pushnumber(L, found_index);
+            lua_pushnumber(L, -1);
         }
         else
         {
-            lua_pushnumber(L, -1);
+            ent_x = g_ent[a].tilex;
+            ent_y = g_ent[a].tiley;
+            if (Game.Map.g_map.bounds.IsBound(found_index, ent_x, ent_y, ent_x, ent_y))
+            {
+                lua_pushnumber(L, found_index);
+            }
+            else
+            {
+                lua_pushnumber(L, -1);
+            }
         }
     }
     else
@@ -1816,31 +1860,32 @@ static int KQ_get_bounds(lua_State* L)
 
 static int KQ_get_ent_active(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
+    bool active = g_ent[a].active;
+    lua_pushboolean(L, active);
 
-    lua_pushboolean(L, g_ent[a].active);
     return 1;
 }
 
 static int KQ_get_ent_atype(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
-
-    lua_pushnumber(L, g_ent[a].atype);
+    int a = checked_entity_num(L, 1);
+    int atype = g_ent[a].atype;
+    lua_pushnumber(L, atype);
     return 1;
 }
 
 static int KQ_get_ent_chrx(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
-
-    lua_pushnumber(L, g_ent[a].chrx);
+    int a = checked_entity_num(L, 1);
+    int chrx = g_ent[a].chrx;
+    lua_pushnumber(L, chrx);
     return 1;
 }
 
 static int KQ_get_ent_facehero(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     lua_pushnumber(L, g_ent[a].facehero);
     return 1;
@@ -1848,7 +1893,7 @@ static int KQ_get_ent_facehero(lua_State* L)
 
 static int KQ_get_ent_facing(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     lua_pushnumber(L, g_ent[a].facing);
     return 1;
@@ -1856,7 +1901,7 @@ static int KQ_get_ent_facing(lua_State* L)
 
 static int KQ_get_ent_id(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     lua_pushnumber(L, g_ent[a].eid);
     return 1;
@@ -1864,7 +1909,7 @@ static int KQ_get_ent_id(lua_State* L)
 
 static int KQ_get_ent_movemode(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     lua_pushnumber(L, g_ent[a].movemode);
     return 1;
@@ -1872,7 +1917,7 @@ static int KQ_get_ent_movemode(lua_State* L)
 
 static int KQ_get_ent_obsmode(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     lua_pushnumber(L, g_ent[a].obsmode);
     return 1;
@@ -1880,7 +1925,7 @@ static int KQ_get_ent_obsmode(lua_State* L)
 
 static int KQ_get_ent_snapback(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     lua_pushnumber(L, g_ent[a].snapback);
     return 1;
@@ -1888,7 +1933,7 @@ static int KQ_get_ent_snapback(lua_State* L)
 
 static int KQ_get_ent_speed(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     lua_pushnumber(L, g_ent[a].speed);
     return 1;
@@ -1903,7 +1948,7 @@ static int KQ_get_ent_speed(lua_State* L)
  */
 static int KQ_get_ent_tile(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     lua_pushnumber(L, g_ent[a].tilex);
     lua_pushnumber(L, g_ent[a].tiley);
@@ -1912,7 +1957,7 @@ static int KQ_get_ent_tile(lua_State* L)
 
 static int KQ_get_ent_tilex(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     lua_pushnumber(L, g_ent[a].tilex);
     return 1;
@@ -1920,7 +1965,7 @@ static int KQ_get_ent_tilex(lua_State* L)
 
 static int KQ_get_ent_tiley(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     lua_pushnumber(L, g_ent[a].tiley);
     return 1;
@@ -1928,7 +1973,7 @@ static int KQ_get_ent_tiley(lua_State* L)
 
 static int KQ_get_ent_transl(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     lua_pushnumber(L, g_ent[a].transl);
     return 1;
@@ -2297,7 +2342,7 @@ static int KQ_give_xp(lua_State* L)
 
 static int KQ_in_forest(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     lua_pushnumber(L, Draw.is_forestsquare(g_ent[a].tilex, g_ent[a].tiley));
     return 1;
@@ -2435,10 +2480,10 @@ static int KQ_move_camera(lua_State* L)
  */
 static int KQ_move_entity(lua_State* L)
 {
-    int entity_id = real_entity_num(L, 1);
+    int entity_id = checked_entity_num(L, 1);
     int kill = 0, target_x = 0, target_y = 0;
 
-    char buffer[1024] = { 0 };
+    std::string buffer;
 
     if (lua_type(L, 2) == LUA_TSTRING)
     {
@@ -2457,15 +2502,15 @@ static int KQ_move_entity(lua_State* L)
         kill = (int)lua_tonumber(L, 4);
     }
 
-    find_path(entity_id, g_ent[entity_id].tilex, g_ent[entity_id].tiley, target_x, target_y, buffer, sizeof(buffer));
+    find_path(entity_id, g_ent[entity_id].tilex, g_ent[entity_id].tiley, target_x, target_y, buffer);
 
     /*  FIXME: The fourth parameter is a ugly hack for now.  */
     if (kill)
     {
-        strcat(buffer, "K");
+        buffer += 'K';
     }
 
-    EntityManager.set_script(entity_id, buffer);
+    EntityManager.set_script(entity_id, buffer.c_str());
     return 0;
 }
 
@@ -2597,7 +2642,8 @@ static int KQ_pnum(lua_State* L)
 static int KQ_prompt(lua_State* L)
 {
     const char* txt[4] = { 0 };
-    char pbuf[256] = { 0 };
+    std::string pbuf;
+
     int b, nopts, nonblank;
 
     /* The B_TEXT or B_THOUGHT is ignored */
@@ -2609,7 +2655,6 @@ static int KQ_prompt(lua_State* L)
         nopts = 4;
     }
 
-    pbuf[0] = '\0';
     nonblank = 0;
 
     for (size_t a = 0; a < 4; a++)
@@ -2628,9 +2673,9 @@ static int KQ_prompt(lua_State* L)
         {
             if (a != 0)
             {
-                strcat(pbuf, "\n");
+                pbuf += '\n';
             }
-            strcat(pbuf, txt[a]);
+            pbuf += txt[a];
         }
         lua_pushnumber(L, Draw.prompt_ex(b, pbuf, &txt[nonblank - nopts], nopts));
     }
@@ -2888,7 +2933,7 @@ static int KQ_set_desc(lua_State* L)
 
 static int KQ_set_ent_active(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
     int b = lua_tointeger(L, 2);
     g_ent[a].active = b;
 
@@ -2897,7 +2942,7 @@ static int KQ_set_ent_active(lua_State* L)
 
 static int KQ_set_ent_atype(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     g_ent[a].atype = (int)lua_tonumber(L, 2);
     return 0;
@@ -2905,7 +2950,7 @@ static int KQ_set_ent_atype(lua_State* L)
 
 static int KQ_set_ent_chrx(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     g_ent[a].chrx = (int)lua_tonumber(L, 2);
     return 0;
@@ -2913,7 +2958,7 @@ static int KQ_set_ent_chrx(lua_State* L)
 
 static int KQ_set_ent_facehero(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
     auto b = lua_tointeger(L, 2);
 
     if (b == 0 || b == 1)
@@ -2925,7 +2970,7 @@ static int KQ_set_ent_facehero(lua_State* L)
 
 static int KQ_set_ent_facing(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
     auto b = lua_tointeger(L, 2);
 
     if (b >= eDirection::FACE_DOWN && b <= eDirection::FACE_RIGHT)
@@ -2937,7 +2982,7 @@ static int KQ_set_ent_facing(lua_State* L)
 
 static int KQ_set_ent_id(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     g_ent[a].eid = (int)lua_tonumber(L, 2);
     return 0;
@@ -2945,7 +2990,7 @@ static int KQ_set_ent_id(lua_State* L)
 
 static int KQ_set_ent_movemode(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
     auto b = lua_tointeger(L, 2);
 
     // Does not include eMoveMode::MM_TARGET: for that, use set_ent_target().
@@ -2958,7 +3003,7 @@ static int KQ_set_ent_movemode(lua_State* L)
 
 static int KQ_set_ent_obsmode(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
     auto b = lua_tointeger(L, 2);
 
     if (b == 0 || b == 1)
@@ -2970,7 +3015,7 @@ static int KQ_set_ent_obsmode(lua_State* L)
 
 static int KQ_set_ent_script(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     EntityManager.set_script(a, lua_tostring(L, 2));
     return 0;
@@ -2978,7 +3023,7 @@ static int KQ_set_ent_script(lua_State* L)
 
 static int KQ_set_ent_snapback(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
     auto b = lua_tointeger(L, 2);
 
     if (b == 0 || b == 1)
@@ -2990,7 +3035,7 @@ static int KQ_set_ent_snapback(lua_State* L)
 
 static int KQ_set_ent_speed(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
     auto b = lua_tointeger(L, 2);
 
     if (b >= 1 && b < ePIDX::MAXCHRS)
@@ -3012,7 +3057,7 @@ static int KQ_set_ent_speed(lua_State* L)
  */
 static int KQ_set_ent_target(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     g_ent[a].target_x = (int)lua_tonumber(L, 2);
     g_ent[a].target_y = (int)lua_tonumber(L, 3);
@@ -3022,7 +3067,7 @@ static int KQ_set_ent_target(lua_State* L)
 
 static int KQ_set_ent_tilex(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     g_ent[a].tilex = (int)lua_tonumber(L, 2);
     g_ent[a].x = g_ent[a].tilex * 16;
@@ -3031,7 +3076,7 @@ static int KQ_set_ent_tilex(lua_State* L)
 
 static int KQ_set_ent_tiley(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
 
     g_ent[a].tiley = (int)lua_tonumber(L, 2);
     g_ent[a].y = g_ent[a].tiley * 16;
@@ -3040,10 +3085,10 @@ static int KQ_set_ent_tiley(lua_State* L)
 
 static int KQ_set_ent_transl(lua_State* L)
 {
-    int a = real_entity_num(L, 1);
+    int a = checked_entity_num(L, 1);
     auto b = lua_tointeger(L, 2);
 
-    if (b == 0 || b == 1)
+    if (a != 255 && (b == 0 || b == 1))
     {
         g_ent[a].transl = b;
     }
@@ -3771,7 +3816,7 @@ static int KQ_traceback(lua_State* theL)
     }
 #ifndef DEBUGMODE
     Draw.message(_("Script error."), 255, 0);
-#else /* !DEBUGMODE */
+#else  /* !DEBUGMODE */
     Draw.message(_("Script error. Check system logs for more info"), 255, 0);
 #endif /* DEBUGMODE */
     return 1;
@@ -4035,11 +4080,9 @@ static int KQ_party_setter(lua_State* L)
                 return 0;
             }
             /* it was nil, erase a character */
-            for (i = which; i < (PSIZE - 1); ++i)
-            {
-                pidx[i] = pidx[i + 1];
-                memcpy(&g_ent[i], &g_ent[i + 1], sizeof(KQEntity));
-            }
+            std::copy(pidx + which + 1, pidx + PSIZE, pidx + which);
+            std::copy(g_ent + which + 1, g_ent + PSIZE, g_ent + which);
+
             --numchrs;
             g_ent[numchrs].active = false;
             pidx[numchrs] = PIDX_UNDEFINED;
@@ -4061,7 +4104,7 @@ static int KQ_party_setter(lua_State* L)
                 {
                     /* Added a character in */
                     numchrs = which + 1;
-                    memcpy(&g_ent[which], &g_ent[0], sizeof(KQEntity));
+                    g_ent[which] = g_ent[0];
                     g_ent[which].x = g_ent[0].x;
                     g_ent[which].y = g_ent[0].y;
                 }

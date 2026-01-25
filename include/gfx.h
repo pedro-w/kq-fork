@@ -43,7 +43,6 @@ class Raster
     Raster(uint16_t w, uint16_t h);
 
     Raster(Raster&&) = default;
-    Raster& operator=(Raster&&) = default;
 
     /*! \brief Blit from this bitmap onto target bitmap: all options.
      *
@@ -182,7 +181,7 @@ class Raster
      *
      * \param       rc SDL rectangle to use for dimensions.
      * \param       format SDL_PixelFormat structure corresponding to a pixel format.
-     * \param[out]  pixels Pointer to the locked pixels, appropriately offset by the locked area. 
+     * \param[out]  pixels Pointer to the locked pixels, appropriately offset by the locked area.
      * \param       stride The pitch (length of one row in bytes) of the locked pixels.
      */
     void to_rgba32(const SDL_Rect& rc, SDL_PixelFormat* format, void* pixels, int stride) const;
@@ -215,7 +214,7 @@ class Raster
 };
 
 inline void Raster::blitTo(Raster* target, int16_t src_x, int16_t src_y, int16_t dest_x, int16_t dest_y, uint16_t src_w,
-                    uint16_t src_h)
+                           uint16_t src_h)
 {
     blitTo(target, src_x, src_y, src_w, src_h, dest_x, dest_y, src_w, src_h, false);
 }

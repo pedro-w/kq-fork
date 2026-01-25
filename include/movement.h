@@ -23,6 +23,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 
 /*! \brief Path search implementation for KQ.
  *
@@ -34,7 +35,6 @@
  * \param[in] target_x The x coordinate of the target point.
  * \param[in] target_y The y coordinate of the target point.
  * \param[out] buffer A buffer where the result will be stored.
- * \param[in] size The size of the result buffer.
  * \returns Whether it could or not find the path.
  *          0 Success,
  *          1 No path found,
@@ -42,4 +42,4 @@
  *          3 Misc error.
  */
 int find_path(size_t entity_id, uint32_t source_x, uint32_t source_y, uint32_t target_x, uint32_t target_y,
-              char* buffer, uint32_t size);
+              std::string& buffer);

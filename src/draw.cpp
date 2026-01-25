@@ -55,7 +55,7 @@ constexpr auto MSG_COLS = 36;
  *
  * Messages to the player can be up to 4 rows of text (at a time).
  */
-std::array<std::string, MSG_ROWS> msgbuf; //char msgbuf[MSG_ROWS][MSG_COLS];
+std::array<std::string, MSG_ROWS> msgbuf; // char msgbuf[MSG_ROWS][MSG_COLS];
 
 // Position of speaking entity for speech bubbles in pixels
 int gbx, gby;
@@ -302,9 +302,8 @@ void KDraw::draw_backlayer()
 {
     // Parallax should be disabled for the back layer when player goes inside a bounded area.
     bool enable_parallax = !Game.Map.g_map.bounds.IsBound(view_x1, view_y1, view_x2, view_y2);
-    auto box = calculate_box(enable_parallax &&
-                             (Game.Map.g_map.map_mode == eMapMode::MAPMODE_1p2E3S ||
-                              Game.Map.g_map.map_mode == eMapMode::MAPMODE_1E2p3S));
+    auto box = calculate_box(enable_parallax && (Game.Map.g_map.map_mode == eMapMode::MAPMODE_1p2E3S ||
+                                                 Game.Map.g_map.map_mode == eMapMode::MAPMODE_1E2p3S));
     int tile_x1 = box.x_offset / TILE_W;
     int tile_x2 = (box.x_offset + SCREEN_W - 1) / TILE_W;
     int tile_y1 = box.y_offset / TILE_H;
@@ -933,20 +932,14 @@ void KDraw::message(const char* inMessage, int icn, int delay)
 
     /* Do the $0 replacement stuff */
     std::string parsed = parse_string(inMessage);
-    char* unsplit_string = new char[1024];
-    memset(unsplit_string, 0, 1024);
-    strncpy(unsplit_string, parsed.c_str(), 1023);
-
-    // This will mangle the contents of unsplit_string, so be careful with this:
-    const char* s = unsplit_string;
 
     /* Save a copy of the screen */
     fullblit(double_buffer, back);
 
     /* Loop for each box full of text... */
-    while (s != nullptr)
+    while (!parsed.empty())
     {
-        s = relay(s);
+        parsed = relay(parsed);
         /* Calculate the box size */
         num_lines = max_len = 0;
         for (idx = 0; idx < msgbuf.size(); ++idx)
@@ -992,7 +985,6 @@ void KDraw::message(const char* inMessage, int icn, int delay)
         }
         fullblit(back, double_buffer);
     }
-    delete[] unsplit_string;
 }
 
 void KDraw::replaceAll(std::string& str, const std::string& from, const std::string& to)
@@ -1009,11 +1001,11 @@ void KDraw::replaceAll(std::string& str, const std::string& from, const std::str
     }
 }
 
-std::string KDraw::parse_string(const std::string& the_string)
+std::string KDraw::parse_string(std::string_view the_string)
 {
     if (the_string.find('$', 0) == std::string::npos)
     {
-        return the_string;
+        return std::string(the_string);
     }
 
     std::string output(the_string);
@@ -1119,7 +1111,7 @@ std::string::const_iterator KDraw::decode_utf8(std::string::const_iterator it, u
 
     if (!ok)
     {
-        //Game.program_death(_("UTF-8 decode error"));
+        // Game.program_death(_("UTF-8 decode error"));
         sprintf(strbuf, _("UTF-8 decode error: %d"), cp);
         Game.klog(strbuf);
     }
@@ -1173,7 +1165,7 @@ void KDraw::print_font(Raster* where, int sx, int sy, const std::string& msg, eF
     }
 }
 
-void KDraw::print_num(Raster* where, int sx, int sy, const std::string& msg, eFont font_index)
+void KDraw::print_num(Raster* where, int sx, int sy, std::string_view msg, eFont font_index)
 {
     assert(where != nullptr && "where == NULL");
     // Check ought not to be necessary if using the enum correctly.
@@ -1262,7 +1254,7 @@ int KDraw::prompt(int who, int numopt, eBubbleStyle bstyle, const char* sp1, con
     return ptr;
 }
 
-int KDraw::prompt_ex(int who, const char* ptext, const char* opt[], int n_opt)
+int KDraw::prompt_ex(int who, std::string_view ptext, const char* opt[], int n_opt)
 {
     int curopt = 0;
     int topopt = 0;
@@ -1272,13 +1264,13 @@ int KDraw::prompt_ex(int who, const char* ptext, const char* opt[], int n_opt)
     int i, w, running;
 
     std::string parsed = parse_string(ptext);
-    ptext = parsed.c_str();
-    while (1)
+
+    while (true)
     {
         gbbw = 1;
         gbbs = 0;
-        ptext = relay(ptext);
-        if (ptext)
+        parsed = relay(parsed);
+        if (!parsed.empty())
         {
             /* print prompt pages prior to the last one */
             generic_text(who, B_TEXT, 0);
@@ -1397,7 +1389,7 @@ int KDraw::prompt_ex(int who, const char* ptext, const char* opt[], int n_opt)
     }
 }
 
-const char* KDraw::relay(const char* buf)
+std::string KDraw::relay(std::string_view buf)
 {
     int lasts, lastc, i, cr, cc;
     char tc;
@@ -1496,7 +1488,7 @@ const char* KDraw::relay(const char* buf)
             break;
 
         case M_END:
-            return nullptr;
+            return {};
             break;
 
         default:
@@ -1650,26 +1642,24 @@ void KDraw::set_view(int vw, int x1, int y1, int x2, int y2)
     }
 }
 
-void KDraw::text_ex(eBubbleStyle fmt, int who, const char* s)
+void KDraw::text_ex(eBubbleStyle fmt, int who, std::string_view s)
 {
     std::string parsed = parse_string(s);
-    s = parsed.c_str();
 
-    while (s)
+    while (!parsed.empty())
     {
-        s = relay(s);
+        parsed = relay(parsed);
         generic_text(who, fmt, 0);
     }
 }
 
-void KDraw::porttext_ex(eBubbleStyle fmt, int who, const char* s)
+void KDraw::porttext_ex(eBubbleStyle fmt, int who, std::string_view s)
 {
     std::string parsed = parse_string(s);
-    s = parsed.c_str();
 
-    while (s)
+    while (!parsed.empty())
     {
-        s = relay(s);
+        parsed = relay(parsed);
         generic_text(who, fmt, 1);
     }
 }

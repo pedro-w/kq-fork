@@ -47,7 +47,7 @@ KTiledMap TiledMap;
 // Compatibility as VC insists we use these for safety
 #ifdef _MSC_VER
 using stdext::make_checked_array_iterator;
-#else /* !_MSC_VER */
+#else  /* !_MSC_VER */
 template<typename T> T* make_checked_array_iterator(T* ptr, size_t size, size_t offset = 0)
 {
     (void)size;
@@ -354,7 +354,6 @@ std::vector<KQEntity> KTiledMap::load_tmx_entities(const XMLElement* el)
     {
         auto properties = i->FirstChildElement("properties");
         KQEntity entity;
-        memset(&entity, 0, sizeof(entity));
         entity.x = i->IntAttribute("x");
         entity.y = i->IntAttribute("y");
         entity.tilex = entity.x / TILE_W;
@@ -448,7 +447,7 @@ std::vector<KQEntity> KTiledMap::load_tmx_entities(const XMLElement* el)
                 }
                 if (xprop->Attribute("name", "script"))
                 {
-                    strncpy(entity.script, value->Value(), sizeof(entity.script));
+                    entity.script = value->Value();
                 }
             }
         }
@@ -648,7 +647,6 @@ void tmx_map::set_current()
     }
 
     // Entities
-    memset(&g_ent[PSIZE], 0, (MAX_ENTITIES - PSIZE) * sizeof(KQEntity));
     copy(begin(entities), end(entities), make_checked_array_iterator(g_ent, MAX_ENTITIES, PSIZE));
 
     // Tilemaps

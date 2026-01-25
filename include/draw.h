@@ -282,7 +282,7 @@ class KDraw
      * \param   msg String to draw.
      * \param   font_index Font index in range [0..4].
      */
-    void print_num(Raster* where, int sx, int sy, const std::string& msg, eFont font_index);
+    void print_num(Raster* where, int sx, int sy, std::string_view msg, eFont font_index);
 
     /*! \brief Display speech/thought bubble.
      *
@@ -293,7 +293,7 @@ class KDraw
      * \param   who Character that is speaking.
      * \param   s The text to display.
      */
-    void text_ex(eBubbleStyle fmt, int who, const char* s);
+    void text_ex(eBubbleStyle fmt, int who, std::string_view s);
 
     /*! \brief Display speech/thought bubble with portrait.
      *
@@ -304,7 +304,7 @@ class KDraw
      * \param   who Character that is speaking.
      * \param   s The text to display.
      */
-    void porttext_ex(eBubbleStyle fmt, int who, const char* s);
+    void porttext_ex(eBubbleStyle fmt, int who, std::string_view s);
 
     /*! \brief Do user prompt.
      *
@@ -340,7 +340,7 @@ class KDraw
      * \param   n_opt The number of options.
      * \returns Option selected, 0= first option etc.
      */
-    int prompt_ex(int who, const char* ptext, const char* opt[], int n_opt);
+    int prompt_ex(int who, std::string_view ptext, const char* opt[], int n_opt);
 
     /*! \brief Alert player.
      *
@@ -417,12 +417,12 @@ class KDraw
     /*! Boundary adjusted for parallax. */
     struct PBound
     {
-        int tile_left;      // In full tiles
-        int tile_top;       // In full tiles
-        int tile_right;     // In full tiles
-        int tile_bottom;    // In full tiles
-        int x_offset;       // In pixels
-        int y_offset;       // In pixels
+        int tile_left;   // In full tiles
+        int tile_top;    // In full tiles
+        int tile_right;  // In full tiles
+        int tile_bottom; // In full tiles
+        int x_offset;    // In pixels
+        int y_offset;    // In pixels
     };
 
     /*! \brief Calculate bounds.
@@ -535,9 +535,9 @@ class KDraw
      * Processes as much as it can to fit in one box, and returns a pointer to the next unprocessed character.
      *
      * \param   buf The string to reformat.
-     * \returns The rest of the string that has not been processed, or NULL if it has all been processed.
+     * \returns The rest of the string that has not been processed, or empty if it has all been processed.
      */
-    const char* relay(const char* buf);
+    std::string relay(std::string_view buf);
 
     /*! \brief Calculate bubble position.
      *
@@ -577,7 +577,7 @@ class KDraw
      * \param   the_string Input string.
      * \returns A string where any $0 or $1 are replaced by player names, or the original string if none found.
      */
-    std::string parse_string(const std::string& the_string);
+    std::string parse_string(std::string_view the_string);
 
     // The internal processing modes during text reformatting; used in \sa relay()
     enum m_mode

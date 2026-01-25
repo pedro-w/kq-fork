@@ -124,7 +124,7 @@ static Raster* bmp_from_png(const std::string& path)
     png_image_free(&image);
     return bitmap;
 }
-#else // !PNG_SIMPLIFIED_READ_SUPPORTED
+#else  // !PNG_SIMPLIFIED_READ_SUPPORTED
 static Raster* bmp_from_png(const std::string& path)
 {
     FILE* fp = std::fopen(path.c_str(), "rb");

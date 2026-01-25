@@ -377,22 +377,23 @@ static eMiniMenu mini_menu(int omask)
         }
     }
 }
-
+/*!
+ *\brief Add to the party.
+ * Adds a new ent if there is space, otherwise do nothing
+ * \param id the ent to add
+ * \param lead if true, add as the party leader
+ */
 static void party_add(ePIDX id, bool lead)
 {
     KQEntity* t;
 
     if (numchrs < MAXCHRS)
     {
-        if (numchrs > 0)
-        {
-            memcpy(&g_ent[numchrs], &g_ent[numchrs - 1], sizeof(*g_ent));
-        }
         if (lead)
         {
+            std::copy_backward(g_ent, g_ent + numchrs, g_ent + 1);
+            std::copy_backward(pidx, pidx + numchrs, pidx + 1);
             t = &g_ent[0];
-            memmove(&pidx[1], &pidx[0], sizeof(*pidx) * numchrs);
-            memmove(&g_ent[1], &g_ent[0], sizeof(*g_ent) * numchrs);
             pidx[0] = id;
         }
         else
@@ -409,14 +410,12 @@ static void party_add(ePIDX id, bool lead)
 
 void party_newlead()
 {
-    using std::swap;
-
     // Shift all IDs to the right; shift last ID to the front.
     for (size_t i = 1; i < numchrs; ++i)
     {
         // Change only the entity's type and look; retain the other
         // attributes such as direction facing, speed, etc.
-        swap(pidx[0], pidx[i]);
+        std::swap(pidx[0], pidx[i]);
         std::swap(g_ent[0].eid, g_ent[i].eid);
         std::swap(g_ent[0].chrx, g_ent[i].chrx);
     }
@@ -428,9 +427,9 @@ static void party_remove(ePIDX id)
     {
         if (pidx[pidx_index] == id)
         {
+            std::copy(pidx + pidx_index, pidx + numchrs, pidx + pidx_index + 1);
+            std::copy(g_ent + pidx_index, g_ent + numchrs, g_ent + pidx_index + 1);
             --numchrs;
-            memmove(&pidx[pidx_index], &pidx[pidx_index + 1], sizeof(*pidx) * (numchrs - pidx_index));
-            memmove(&g_ent[pidx_index], &g_ent[pidx_index + 1], sizeof(*g_ent) * (numchrs - pidx_index));
             pidx[numchrs] = PIDX_UNDEFINED;
             g_ent[numchrs].active = false;
             return;

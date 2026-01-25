@@ -28,6 +28,7 @@
  */
 
 #include <cstdint>
+#include <string_view>
 
 typedef uint32_t t_entity;
 
@@ -97,7 +98,7 @@ class KEntityManager
      * \param   target_entity Entity in g_ent[] array to process.
      * \param   movestring The script.
      */
-    void set_script(t_entity target_entity, const char* movestring);
+    void set_script(t_entity target_entity, std::string_view movestring);
 
   protected:
     /*! \brief Chase player.

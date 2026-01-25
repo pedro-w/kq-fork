@@ -1051,6 +1051,10 @@ int KDisk::load_stats_only(const char* filename, s_sgstats& stats)
                     auto iter = begin(sg);
                     while (iter != end(sg))
                     {
+                        if (stats.num_characters >= stats.characters.size())
+                        {
+                            Game.program_death("Error in save game file");
+                        }
                         auto& chr = stats.characters[stats.num_characters++];
                         chr.id = *iter++;
                         chr.level = *iter++;

@@ -251,7 +251,8 @@ void KEffects::draw_attacksprite(size_t target_fighter_index, int multiple_targe
     Raster* eb = get_cached_image(effect.ename);
     for (int frame_index = 0; frame_index < effect.numf; ++frame_index)
     {
-        for (size_t fighter_index = start_fighter_index; fighter_index < start_fighter_index + num_fighters; ++fighter_index)
+        for (size_t fighter_index = start_fighter_index; fighter_index < start_fighter_index + num_fighters;
+             ++fighter_index)
         {
             if (is_active(fighter_index))
             {
@@ -365,7 +366,8 @@ void KEffects::draw_hugesprite(size_t target_fighter_index, int hx, int hy, size
         {
             masked_blit(eb, double_buffer, 0, effect.ysize * frame_index, hx, hy, effect.xsize, effect.ysize);
         }
-        for (size_t fighter_index = start_fighter_index; fighter_index < start_fighter_index + num_fighters; ++fighter_index)
+        for (size_t fighter_index = start_fighter_index; fighter_index < start_fighter_index + num_fighters;
+             ++fighter_index)
         {
             if (is_active(fighter_index))
             {
@@ -426,7 +428,8 @@ void KEffects::draw_spellsprite(size_t target_fighter_index, int multiple_target
     play_effect(effect.snd, 128);
     for (int num_frames = 0; num_frames < effect.numf; ++num_frames)
     {
-        for (size_t fighter_index = start_fighter_index; fighter_index < start_fighter_index + num_fighters; ++fighter_index)
+        for (size_t fighter_index = start_fighter_index; fighter_index < start_fighter_index + num_fighters;
+             ++fighter_index)
         {
             if (is_active(fighter_index))
             {

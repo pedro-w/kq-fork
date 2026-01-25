@@ -575,10 +575,22 @@ class KGame
      */
     void wait_released();
 
-    int cheat() const                 { return _cheat; }
-    int no_random_encounters() const  { return _no_random_encounters; }
-    int no_monsters() const           { return _no_monsters; }
-    int every_hit_999() const         { return _every_hit_999; }
+    int cheat() const
+    {
+        return _cheat;
+    }
+    int no_random_encounters() const
+    {
+        return _no_random_encounters;
+    }
+    int no_monsters() const
+    {
+        return _no_monsters;
+    }
+    int every_hit_999() const
+    {
+        return _every_hit_999;
+    }
 
     void set_cheat(int cheat);
     void set_no_random_encounters(int no_random_encounters);
@@ -652,10 +664,10 @@ extern std::vector<Raster*> page_indicator;         //[MAXPGB]
 extern std::vector<Raster*> sfonts;                 //[5]
 extern std::vector<Raster*> shadow;                 //[NUM_SHADOWS]
 
-extern std::vector<std::vector<Raster*>> frames;    //[MAXCHRS][MAXFRAMES]
-extern std::vector<std::vector<Raster*>> cframes;   //[NUM_FIGHTERS][MAXCFRAMES]
-extern std::vector<std::vector<Raster*>> tcframes;  //[NUM_FIGHTERS][MAXCFRAMES]
-extern std::vector<std::vector<Raster*>> eframes;   //[MAXE][MAXEFRAMES]
+extern std::vector<std::vector<Raster*>> frames;   //[MAXCHRS][MAXFRAMES]
+extern std::vector<std::vector<Raster*>> cframes;  //[NUM_FIGHTERS][MAXCFRAMES]
+extern std::vector<std::vector<Raster*>> tcframes; //[NUM_FIGHTERS][MAXCFRAMES]
+extern std::vector<std::vector<Raster*>> eframes;  //[MAXE][MAXEFRAMES]
 
 extern Raster* b_mp;
 extern Raster* b_repulse;

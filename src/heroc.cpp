@@ -60,7 +60,7 @@ int can_use_item = 1;
 /* Internal variables */
 
 /* Text names of hero skills */
-char sk_names[MAXCHRS][7];
+static const char* sk_names[MAXCHRS];
 
 /* Internal functions */
 
@@ -715,20 +715,24 @@ void hero_choose_action(size_t fighter_index)
     int stop = 0, amy;
     size_t equipment_index;
     size_t ca_index;
-    uint32_t sptr = 1, ptr = 0, my = 0, tt, chi[9];
+    uint32_t sptr = 1, ptr = 0, my = 0, tt;
 
     // This is going to blow up if we translate _(...) text into a language
     // where the text is longer than 8 characters.
-    char ca[9][8];
+    struct
+    {
+        const char* n;
+        int i;
+    } ca[9];
 
-    strcpy(sk_names[0], _("Rage"));
-    strcpy(sk_names[1], _("Sweep"));
-    strcpy(sk_names[2], _("Infuse"));
-    strcpy(sk_names[3], _("Prayer"));
-    strcpy(sk_names[4], _("Boost"));
-    strcpy(sk_names[5], _("Cover"));
-    strcpy(sk_names[6], _("Steal"));
-    strcpy(sk_names[7], _("Sense"));
+    sk_names[0] = _("Rage");
+    sk_names[1] = _("Sweep");
+    sk_names[2] = _("Infuse");
+    sk_names[3] = _("Prayer");
+    sk_names[4] = _("Boost");
+    sk_names[5] = _("Cover");
+    sk_names[6] = _("Steal");
+    sk_names[7] = _("Sense");
 
     if (!Combat.GetEtherEffectActive(fighter_index))
     {
@@ -746,25 +750,21 @@ void hero_choose_action(size_t fighter_index)
         Game.do_check_animation();
         Combat.battle_render(fighter_index + 1, fighter_index + 1, 0);
         my = 0;
-        strcpy(ca[my], _("Attack"));
-        chi[my] = C_ATTACK;
+        ca[my] = { _("Attack"), C_ATTACK };
         my++;
         if (hero_skillcheck(fighter_index))
         {
-            strcpy(ca[my], sk_names[pidx[fighter_index]]);
-            chi[my] = C_SKILL;
+            ca[my] = { sk_names[pidx[fighter_index]], C_SKILL };
             my++;
         }
         if (!fighter[fighter_index].IsMute() && available_spells(fighter_index) > 0)
         {
-            strcpy(ca[my], _("Spell"));
-            chi[my] = C_SPELL;
+            ca[my] = { _("Spell"), C_SPELL };
             my++;
         }
         if (can_use_item)
         {
-            strcpy(ca[my], _("Item"));
-            chi[my] = C_ITEM;
+            ca[my] = { _("Item"), C_ITEM };
             my++;
         }
         tt = 0;
@@ -777,8 +777,7 @@ void hero_choose_action(size_t fighter_index)
         }
         if (tt > 0)
         {
-            strcpy(ca[my], _("Invoke"));
-            chi[my] = C_INVOKE;
+            ca[my] = { _("Invoke"), C_INVOKE };
             my++;
         }
         if (my > 5)
@@ -792,7 +791,7 @@ void hero_choose_action(size_t fighter_index)
         Draw.menubox(double_buffer, 120, amy, 8, my, eBoxFill::TRANSPARENT);
         for (ca_index = 0; ca_index < my; ca_index++)
         {
-            Draw.print_font(double_buffer, 136, ca_index * 8 + amy + 8, ca[ca_index], FNORMAL);
+            Draw.print_font(double_buffer, 136, ca_index * 8 + amy + 8, ca[ca_index].n, FNORMAL);
         }
         if (sptr == 1)
         {
@@ -854,11 +853,11 @@ void hero_choose_action(size_t fighter_index)
                  // but the following line needs to be accessed regardless
                  // of whether DEBUGMODE is declared or not.
                  // It also needs to run in case "debugging" is NOT >= 3.
-#endif /* DEBUGMODE */
+#endif           /* DEBUGMODE */
                 if (sptr - 1 > can_run)
-            {
-                sptr = 1 + can_run;
-            }
+                {
+                    sptr = 1 + can_run;
+                }
         }
         if (PlayerInput.balt())
         {
@@ -876,7 +875,7 @@ void hero_choose_action(size_t fighter_index)
             }
             if (sptr == 1)
             {
-                switch (chi[ptr])
+                switch (ca[ptr].i)
                 {
                 case C_ATTACK:
                     if (hero_attack(fighter_index) == 1)
@@ -1254,8 +1253,8 @@ static void hero_run()
 
                 if (fighter[fighter_index].IsAlive())
                 {
-                    draw_sprite(double_buffer, frames[pidx[fighter_index]][animation_frame_num], fighter[fighter_index].cx,
-                                fighter[fighter_index].cy);
+                    draw_sprite(double_buffer, frames[pidx[fighter_index]][animation_frame_num],
+                                fighter[fighter_index].cx, fighter[fighter_index].cy);
                 }
             }
             Draw.blit2screen();
